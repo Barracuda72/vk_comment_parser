@@ -6,9 +6,9 @@ import time
 
 class CommentCollector:
 
-    def __init__(self, login, password, proxy_list = None):
+    def __init__(self, login, password, proxy_dict = None):
         vk_session = vk_api.VkApi(login, password)
-        vk_session.http.proxies = proxy_list
+        vk_session.http.proxies = proxy_dict
 
         try:
             vk_session.auth()
