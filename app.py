@@ -3,6 +3,7 @@ import config
 import credentials
 import json
 import sys
+import gzip
 
 if (len(sys.argv) < 2):
     print ("Usage: {} <file_with_ids> [<file_with_proxies>]".format(sys.argv[0]))
@@ -22,5 +23,5 @@ with open(filename, "r") as f:
         print(f"current_user: {user_id}")
         user_id = user_id.strip()
         result = comment_collector.get_comments_recursive(user_id, max_depth=1)
-        with open(config.datadir + "/{user_id}.json", 'w+') as res_f:
+        with gzip.open(config.datadir + "/{user_id}.json.gz", 'w+') as res_f:
             json.dump(result, res_f, ensure_ascii=False, indent=2)
