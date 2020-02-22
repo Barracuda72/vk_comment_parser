@@ -1,5 +1,6 @@
 from comment_collector import CommentCollector
 import config
+import credentials
 import json
 import sys
 
@@ -14,7 +15,7 @@ proxies = None
 if (len(sys.argv) > 2):
     proxies = [x.strip() for x in open(sys.argv[2]).readlines()]
 
-comment_collector = CommentCollector(config.login, config.password, proxies)
+comment_collector = CommentCollector(credentials.login, credentials.password, proxies)
 
 with open(filename, "r") as f:
     for user_id in f:
