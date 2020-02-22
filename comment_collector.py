@@ -1,3 +1,5 @@
+#!/usr/bin/env false
+
 import vk_api
 import time
 

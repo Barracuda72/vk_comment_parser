@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from comment_collector import CommentCollector
 import config
 import credentials
