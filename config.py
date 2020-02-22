@@ -1,2 +1,3 @@
-login = 'vk_login'
-password = 'vk_pass'
+#!/usr/bin/env false
+
+datadir = "data/"
