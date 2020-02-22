@@ -6,3 +6,7 @@ credentials.py
 
 .*.swp
 .*.swo
+
+*.json
+*.json.gz
+data/
