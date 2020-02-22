@@ -2,6 +2,7 @@ __pycache__
 *.pyc
 
 ids.txt
+proxies.txt
 credentials.py
 
 .*.swp
