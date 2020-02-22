@@ -13,9 +13,12 @@ def worker_process(creds, user_ids, proxies):
 
     for user_id in user_ids:
         print(f"current_user: {user_id}")
-        result = comment_collector.get_comments_recursive(user_id, max_depth=1)
-        with gzip.open(config.datadir + f"/{user_id}.json.gz", 'w+') as res_f:
-            res_f.write(json.dumps(result, ensure_ascii=False, indent=2).encode('utf-8'))
+        try:
+            result = comment_collector.get_comments_recursive(user_id, max_depth=1)
+            with gzip.open(config.datadir + f"/{user_id}.json.gz", 'w+') as res_f:
+                res_f.write(json.dumps(result, ensure_ascii=False, indent=2).encode('utf-8'))
+        except:
+            print(f"failed to acquire data for user {user_id}")
 
 def chunker_list(seq, size):
     return list(seq[i::size] for i in range(size))
