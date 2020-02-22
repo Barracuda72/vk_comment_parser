@@ -29,11 +29,6 @@ if (len(sys.argv) < 2):
 
 filename = sys.argv[1]
 
-proxies = None
-
-if (len(sys.argv) > 2):
-    proxies = [x.strip() for x in open(sys.argv[2]).readlines()]
-
 user_ids = [x.strip() for x in open(filename, "r").readlines()]
 
 try:
@@ -42,8 +37,24 @@ except:
     creds = [(credentials.login, credentials.password),]
 
 pool_size = len(creds)
+
+proxies = []
+
+if (len(sys.argv) > 2):
+    proxies = [x.strip() for x in open(sys.argv[2]).readlines()]
+    proxies = [
+        {
+            'http' : x,
+            'https' : x,
+        }
+        for x in proxies
+    ]
+
+proxies = proxies + [None] * (pool_size - len(proxies))
+
 data = chunker_list(user_ids, pool_size)
-data = [(creds[i], data[i], proxies) for i in range(pool_size)]
+
+data = [(creds[i], data[i], proxies[i]) for i in range(pool_size)]
 
 with Pool(len(creds)) as p:
     p.starmap(worker_process, data)
