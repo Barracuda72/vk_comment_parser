@@ -9,6 +9,8 @@ import gzip
 from multiprocessing import Pool
 
 def worker_process(creds, user_ids, proxies):
+    print ("Spawning thread {}, {} users, proxy {}".format(creds[0], len(user_ids), proxies))
+
     comment_collector = CommentCollector(creds[0], creds[1], proxies)
 
     for user_id in user_ids:
