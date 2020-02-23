@@ -1,10 +1,10 @@
 #!/bin/sh
 
-proxy_list = $1
+proxy_list=$1
 
-host = "https://semograph.org"
+host="https://semograph.org"
 
-temp_file = `mktemp`
+temp_file=`mktemp`
 
 rm ${temp_file}
 
