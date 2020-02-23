@@ -3,6 +3,7 @@ __pycache__
 
 ids.txt
 proxies.txt
+*.csv
 credentials.py
 
 .*.swp
