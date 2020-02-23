@@ -2,12 +2,13 @@
 
 import vk_api
 import time
-
+import hashlib
 
 class CommentCollector:
 
     def __init__(self, login, password, proxy_dict = None):
-        vk_session = vk_api.VkApi(login, password)
+        login_hash = hashlib.sha256(login.encode("utf-8")).hexdigest()
+        vk_session = vk_api.VkApi(login, password, config_filename = "vk_config." + login_hash + ".json")
         vk_session.http.proxies = proxy_dict
 
         try:
