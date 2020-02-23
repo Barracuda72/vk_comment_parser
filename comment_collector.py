@@ -72,6 +72,11 @@ class CommentCollector:
                     collected_data['nested'][comment['author_id']] = self.get_comments(comment['author_id'],
                                                                                        visited_ids,
                                                                                        depth=depth + 1)
+                collected_data['friends'] = {}
+                friends = self.tools.get_all('friends.get', 5000, {'user_id': user_id})['items']
+
+                for friend in friends:
+                    collected_data['friends'][friend] = self.get_comments(friend, visited_ids, depth=depth+1)
 
             return collected_data
 
