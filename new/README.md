@@ -9,7 +9,7 @@
 
 ## Postgres
 
-- Install postgresql postgresql-contrib python3-psycopg2
+- Install postgresql postgresql-contrib python3-psycopg2 python3-sqlalchemy
 - Enable postgresql and start it with systemctl
 - Create new user with "createuser --interactive" as 'postgres' user
 - Change user password with "\password username" comand from psql CLI
