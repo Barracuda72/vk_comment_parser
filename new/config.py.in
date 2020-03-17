@@ -10,3 +10,6 @@ class postgres(object):
     username = "username"
     password = "password"
     database = "database"
+
+class collector(object):
+    depth = 1
