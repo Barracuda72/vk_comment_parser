@@ -4,18 +4,9 @@ import pika
 import config
 
 class Worker(object):
-    demo = True
-
-    def __init__(self, login, password, proxy):
-        self.login = login
-        self.password = password
-        self.proxy = proxy
-
-        if (not self.demo):
-            self.vk_connect(login, password, proxy)
-            self.rabbit_connect()
-        else:
-            self.run_demo()
+    def __init__(self, collector):
+        self.vk_collector = collector
+        self.rabbit_connect()
 
     def rabbit_connect(self):
         # Create plain credentials
@@ -40,10 +31,6 @@ class Worker(object):
         # Start consuming
         self.channel.start_consuming()
 
-    def vk_connect(self, login, password, proxy):
-        # TODO
-        pass
-
     def message_callback(self, channel, method, properties, body):
         # Convert body to UTF-8 string
         body = body.decode('utf-8')
@@ -55,19 +42,25 @@ class Worker(object):
         channel.basic_ack(delivery_tag = method.delivery_tag)
 
     def process_message(self, message):
-        user, depth = message.split()
-        # TODO
-        #if (config.collector.depth <= int(depth)):
-        if (config.user_depth <= int(depth)):
+        # Split message into parts
+        user, depth = [int(x) for x in message.split()]
+
+        # If current user recursion depth is less than configured, collect user data
+        if (config.collector.depth <= int(depth)):
+            # Collect user data and retrieve user IDs of users whose data should be collected recursively
             print ("Processing user {}".format(user))
-        
-    def run_demo(self):
-        import sys
-        import random
-        
-        filename = sys.argv[1]
+            users = self.vk_collector.collect_user(user)
 
-        user_ids = [x.strip() for x in open(filename, "r").readlines()]
-
-        for user_id in user_ids:
-            self.process_message("{} {}".format(str(user_id), random.randint(0, 10)))
+            # If current recursion depth is less than maximum, then put tasks for recursive processing of returned users
+            if (config.collector.depth < depth):
+                for user in users:
+                    self.produce_message("{} {}".format(user, depth + 1))
+        
+    def produce_message(self, message):
+        # Put message into queue
+        self.channel.basic_publish(exchange='',
+                      routing_key=config.rabbitmq.queue,
+                      body=message.encode('utf-8'),
+                      properties=pika.BasicProperties(
+                         delivery_mode = 2, # Make message persistent
+                      ))
