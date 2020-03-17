@@ -21,11 +21,11 @@ class Comment(Base):
 
     def __init__(self, id, comment):
         self.id = id
-        self.text = Comment.get('text')
-        self.from_id = Comment.get('from_id')
-        self.post_id = Comment.get('post_id')
-        self.date = Comment.get('date')
-        self.reply_to_comment_id = Comment.get('reply_to_comment')
+        self.text = comment.get('text')
+        self.from_id = comment.get('from_id')
+        self.post_id = comment.get('post_id')
+        self.date = comment.get('date')
+        self.reply_to_comment_id = comment.get('reply_to_comment')
 
     def __repr__(self):
         return "<Comment '%d' '%s'>" % (self.id, self.text,)
