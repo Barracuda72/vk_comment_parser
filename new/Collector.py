@@ -6,6 +6,15 @@ import hashlib
 import config
 
 class Collector(object):
+    user_fields = """
+    photo_id, verified, sex, bdate, city, country, home_town, has_photo, photo_50, photo_100, photo_200_orig, photo_200, photo_400_orig, 
+    photo_max, photo_max_orig, online, domain, has_mobile, contacts, site, education, universities, schools, status, last_seen, 
+    followers_count, common_count, occupation, nickname, relatives, relation, personal, connections, exports, activities, interests, 
+    music, movies, tv, books, games, about, quotes, can_post, can_see_all_posts, can_see_audio, can_write_private_message, 
+    can_send_friend_request, is_favorite, is_hidden_from_feed, timezone, screen_name, maiden_name, crop_photo, is_friend, friend_status, 
+    career, military, blacklisted, blacklisted_by_me, can_be_invited_group
+    """
+
     def __init__(self, login, password, proxy = None):
         proxy_dict = {
             'http' : proxy,
@@ -25,10 +34,11 @@ class Collector(object):
 
         self.tools = vk_api.VkTools(vk_session)
         self.vk = vk_session.get_api()
+        self.user_fields = self.user_fields.replace(" ", "").replace("\n", "")
 
     # Return user object
     def _get_user(self, user_id):
-        return self.vk.users.get(user_ids=user_id, name_case="Nom")[0]
+        return self.vk.users.get(user_ids=user_id, name_case="Nom", fields=self.user_fields)[0]
 
     # Return user posts
     def _get_user_wall_posts(self, user_id):
