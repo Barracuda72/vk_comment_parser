@@ -46,13 +46,13 @@ class Worker(object):
         user, depth = [int(x) for x in message.split()]
 
         # If current user recursion depth is less than configured, collect user data
-        if (config.collector.depth <= int(depth)):
+        if (depth <= config.collector.depth):
             # Collect user data and retrieve user IDs of users whose data should be collected recursively
             print ("Processing user {}".format(user))
             users = self.vk_collector.collect_user(user)
 
             # If current recursion depth is less than maximum, then put tasks for recursive processing of returned users
-            if (config.collector.depth < depth):
+            if (depth < config.collector.depth):
                 for user in users:
                     self.produce_message("{} {}".format(user, depth + 1))
         
