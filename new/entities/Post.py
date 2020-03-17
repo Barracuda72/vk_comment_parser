@@ -11,10 +11,10 @@ class Post(Base):
     date = Column(Integer)
 
     owner_id = Column(Integer, ForeignKey('user.id'))
-    owner = relationship('User')
+    owner = relationship('User', foreign_keys=[owner_id])
 
     from_id = Column(Integer, ForeignKey('user.id'))
-    from_ = relationship('User')
+    from_ = relationship('User', foreign_keys=[from_id])
 
     reply_post_id = Column(Integer, ForeignKey('post.id'))
     reply_post = relationship('Post')
