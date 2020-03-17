@@ -13,3 +13,5 @@ class postgres(object):
 
 class collector(object):
     depth = 1
+    max_post_count = 100
+    max_comment_count = 100
