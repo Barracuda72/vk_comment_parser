@@ -1,6 +1,7 @@
 #!/usr/bin/env false
 
 class rabbitmq(object):
+    host = "localhost"
     username = "guest"
     password = "guest"
     queue = "queue_name"
