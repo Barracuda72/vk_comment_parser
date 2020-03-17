@@ -50,4 +50,4 @@ class User(Base):
         # TODO: connections, counter, updated!
 
     def __repr__(self):
-        return "<User('id%d', '%s','%s')>" % (self.vk_id, self.firstname, self.lastname)
+        return "<User('id%d', '%s','%s')>" % (self.id, self.first_name, self.last_name)
