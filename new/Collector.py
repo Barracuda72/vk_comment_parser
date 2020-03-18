@@ -39,7 +39,7 @@ class Collector(object):
         self.user_fields = self.user_fields.replace(" ", "").replace("\n", "")
 
     # Return user object
-    def _get_user(self, user_id):
+    def _get_user_data(self, user_id):
         return self.vk.users.get(user_ids=user_id, name_case="Nom", fields=self.user_fields)[0]
 
     # Return user posts
@@ -50,26 +50,75 @@ class Collector(object):
     def _get_comments_for_post(self, user_id, post_id):
         return self.tools.get_all('wall.getComments', config.collector.max_comment_count, {'owner_id': user_id, 'post_id': post_id})['items']
 
+    # Create new user in the database with all stuff
+    def _create_user(self, user_id, vk_user):
+        # Check city and add it if neccessary
+        vk_city = vk_user.get('city')
+        if (vk_city):
+            db_city = db.session.query(db.City).get(vk_city['id'])
+            if (not db_city):
+                db_city = db.City(vk_city['id'], vk_city['title'])
+                db.session.add(db_city)
+
+        # Check country and add it if neccessary
+        vk_country = vk_user.get('country')
+        if (vk_country):
+            db_country = db.session.query(db.Country).get(vk_country['id'])
+            if (not db_country):
+                db_country = db.Country(vk_country['id'], vk_country['title'])
+                db.session.add(db_country)
+
+        # Check education and add it if neccessary
+        vk_education = vk_user.get('education')
+        if (vk_education):
+            db_education = db.session.query(db.Education).filter_by(
+                        university = vk_education['university'], 
+                        faculty = vk_education['faculty'], 
+                        graduation = vk_education['graduation']
+                    ).first()
+            if (not db_education):
+                # Check University and Faculty, create them if neccessary
+                db_university = db.session.query(db.University).get(vk_educaiton['university'])
+                if (not db_university):
+                    db_university = db.University(vk_education['university'], vk_education['university_name'])
+                    db.session.add(db_university)
+                db_faculty = db.session.query(db.Faculty).get(vk_educaiton['faculty'])
+                if (not db_faculty):
+                    db_faculty = db.University(vk_education['faculty'], vk_education['faculty_name'])
+                    db.session.add(db_faculty)
+
+                db_education = db.Education(None, vk_education)
+                db.session.add(db_education)
+
+        # TODO: connections, counters!
+
+        db_user = db.User(user_id, vk_user)
+        if (vk_education):
+            db_user.education_id = db_education.id
+        db_user.updated = datetime.utcnow()
+        db.session.add(db_user)
+
+        db.session.commit()
+        return db_user
+
     def collect_user(self, user_id):
         print ("Collecting user {}".format(user_id))
 
         # Search user in the database
-        vk_user = db.session.query(db.User).get(user_id)
+        db_user = db.session.query(db.User).get(user_id)
         
-        if (not vk_user):
+        if (not db_user):
             # Create new user
-            user_data = self._get_user(user_id)
-            vk_user = db.User(user_id, user_data)
-            vk_user.updated = datetime.utcnow()
-            db.session.add(vk_user)
-            db.session.commit()
+            vk_user = self._get_user_data(user_id)
+            print (vk_user)
+            db_user = self._create_user(user_id, vk_user)
         else:
             print ("User exists")
             # Check that user update time was long ago
-            if (vk_user.updated + config.collector.user_time_delta > datetime.utcnow()):
+            if (db_user.updated + config.collector.user_time_delta > datetime.utcnow()):
                 print ("Skipping user, its data is new")
                 return []
 
-        print (vk_user)
+        print (db_user)
 
         return []
