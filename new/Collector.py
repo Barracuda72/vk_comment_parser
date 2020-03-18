@@ -110,15 +110,14 @@ class Collector(object):
         if (not db_user):
             # Create new user
             vk_user = self._get_user_data(user_id)
-            print (vk_user)
+            #print (vk_user)
             db_user = self._create_user(user_id, vk_user)
         else:
-            print ("User exists")
             # Check that user update time was long ago
             if (db_user.updated + config.collector.user_time_delta > datetime.utcnow()):
                 print ("Skipping user, its data is new")
                 return []
 
-        print (db_user)
+        #print (db_user)
 
         return []
