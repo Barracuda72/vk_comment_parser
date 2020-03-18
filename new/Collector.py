@@ -49,7 +49,7 @@ class Collector(object):
     # Return comments for post
     def _get_comments_for_post(self, user_id, post_id):
         try:
-            return self.tools.get_all('wall.getComments', config.collector.max_comment_count, {'owner_id': user_id, 'post_id': post_id})['items']
+            return self.tools.get_all('wall.getComments', config.collector.max_comment_count, {'owner_id': user_id, 'post_id': post_id, 'need_likes': True})['items']
         except vk_api.exceptions.VkToolsException as e:
             print ("Exception: {}".format(e))
             return []
