@@ -4,7 +4,8 @@ import vk_api
 import time
 import hashlib
 import config
-import database
+import database as db
+from datetime import datetime
 
 class Collector(object):
     user_fields = """
@@ -52,10 +53,13 @@ class Collector(object):
     def collect_user(self, user_id):
         print ("Collecting user {}".format(user_id))
         # Search user in the database
-        vk_user = database.User.get(user_id)
+        vk_user = db.session.query(db.User).get(user_id)
         if (not vk_user):
             # Create new user
             user_data = self._get_user(user_id)
-            vk_user = database.User(user_id, user_data)
+            vk_user = db.User(user_id, user_data)
+            vk_user.updated = datetime.utcnow()
+            db.session.add(vk_user)
+            db.session.commit()
         print (vk_user)
         return []
