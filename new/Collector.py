@@ -52,8 +52,10 @@ class Collector(object):
 
     def collect_user(self, user_id):
         print ("Collecting user {}".format(user_id))
+
         # Search user in the database
         vk_user = db.session.query(db.User).get(user_id)
+        
         if (not vk_user):
             # Create new user
             user_data = self._get_user(user_id)
@@ -61,5 +63,13 @@ class Collector(object):
             vk_user.updated = datetime.utcnow()
             db.session.add(vk_user)
             db.session.commit()
+        else:
+            print ("User exists")
+            # Check that user update time was long ago
+            if (vk_user.updated + config.collector.user_time_delta > datetime.utcnow()):
+                print ("Skipping user, its data is new")
+                return []
+
         print (vk_user)
+
         return []
