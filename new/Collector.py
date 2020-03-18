@@ -4,6 +4,7 @@ import vk_api
 import time
 import hashlib
 import config
+import database
 
 class Collector(object):
     user_fields = """
@@ -48,8 +49,13 @@ class Collector(object):
     def _get_comments_for_post(self, user_id, post_id):
         return self.tools.get_all('wall.getComments', config.collector.max_comment_count, {'owner_id': user_id, 'post_id': post_id})['items']
 
-    def collect_user(self, user):
-        print ("Collecting user {}".format(user))
-        vk_user = self._get_user(user)
+    def collect_user(self, user_id):
+        print ("Collecting user {}".format(user_id))
+        # Search user in the database
+        vk_user = database.User.get(user_id)
+        if (not vk_user):
+            # Create new user
+            user_data = self._get_user(user_id)
+            vk_user = database.User(user_id, user_data)
         print (vk_user)
         return []
