@@ -48,7 +48,11 @@ class Collector(object):
 
     # Return comments for post
     def _get_comments_for_post(self, user_id, post_id):
-        return self.tools.get_all('wall.getComments', config.collector.max_comment_count, {'owner_id': user_id, 'post_id': post_id})['items']
+        try:
+            return self.tools.get_all('wall.getComments', config.collector.max_comment_count, {'owner_id': user_id, 'post_id': post_id})['items']
+        except vk_api.exceptions.VkToolsException as e:
+            print ("Exception: {}".format(e))
+            return []
 
     # Create new user in the database with all stuff
     def _create_user(self, user_id, vk_user):
@@ -101,6 +105,50 @@ class Collector(object):
         db.session.commit()
         return db_user
 
+    def _get_posts(self, user_id):
+        try:
+            return self.tools.get_all('wall.get', config.collector.max_post_count, {'owner_id': user_id})['items']
+        except vk_api.exceptions.VkToolsException as e:
+            print ("Exception: {}".format(e))
+            return []
+
+    # Returns IDs of all users that commented on post
+    def collect_comments_for_post(self, user_id, post_id):
+        users_replied = []
+
+        vk_comments = self._get_comments_for_post(user_id, post_id)
+        for vk_comment in vk_comments:
+            print (vk_comment)
+            db_comment = db.session.query(db.Comment).get(vk_comment['id'])
+            if (not db_comment):
+                db_comment = db.Comment(vk_comment['id'], vk_comment)
+                db.session.add(db_comment)
+                users_replied.append(db_comment.from_id)
+
+        db.session.commit()
+
+        return users_replied
+
+    # Returns IDs of the users that commented on the posts of current user
+    def collect_posts_with_comments(self, user_id):
+        users_replied = []
+
+        vk_posts = self._get_posts(user_id)
+
+        for vk_post in vk_posts:
+            print (vk_post)
+            db_post = db.session.query(db.Post).get( (vk_post['id'], vk_post['owner_id']) )
+            if (not db_post):
+                # Post doesn't exists, create it
+                db_post = db.Post(vk_post['id'], vk_post)
+                db.session.add(db_post)
+
+            users_replied.extend(self.collect_comments_for_post(user_id, vk_post['id']))
+
+        db.session.commit()
+
+        return users_replied
+
     def collect_user(self, user_id):
         print ("Collecting user {}".format(user_id))
 
@@ -120,4 +168,4 @@ class Collector(object):
 
         #print (db_user)
 
-        return []
+        return self.collect_posts_with_comments(user_id)
