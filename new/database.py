@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 from entities.Base import Base
 from entities.User import User
@@ -15,6 +16,9 @@ from entities.Post import Post
 from entities.Comment import Comment
 
 engine = create_engine('sqlite:///:memory:', echo=True)
+_session = sessionmaker(bind=engine)
+
+session = _session()
 
 Base.metadata.create_all(engine)
 
