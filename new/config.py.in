@@ -1,5 +1,7 @@
 #!/usr/bin/env false
 
+from datetime import timedelta
+
 class rabbitmq(object):
     host = "localhost"
     username = "guest"
@@ -15,3 +17,4 @@ class collector(object):
     depth = 1
     max_post_count = 100
     max_comment_count = 100
+    user_time_delta = timedelta(days=90)
