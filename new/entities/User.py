@@ -4,6 +4,8 @@ from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey
 from sqlalchemy.orm import relationship
 from entities.Base import Base
 
+from datetime import datetime
+
 class User(Base):
     __tablename__ = 'user'
     id = Column(Integer, primary_key=True)
@@ -43,10 +45,15 @@ class User(Base):
         self.is_closed = user.get('is_closed')
         self.nickname = user.get('nickname')
         self.about = user.get('about')
-        self.bdate = user.get('bdate')
         self.sex = user.get('sex')
         self.city_id = user.get('city', {}).get('id')
         self.country_id = user.get('country', {}).get('id')
+        bdate = user.get('bdate')
+        if (bdate):
+            if (bdate.count(".") == 1):
+                # Append fake year
+                bdate = bdate + ".6000"
+            self.bdate = datetime.strptime(bdate, "%d.%m.%Y")
         # TODO: connections, counter, updated!
 
     def __repr__(self):
