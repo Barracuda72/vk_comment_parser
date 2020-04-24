@@ -16,7 +16,7 @@ from entities.Post import Post
 from entities.Photo import Photo
 from entities.Comment import Comment
 
-engine = create_engine('sqlite:///:memory:', echo=True)
+engine = create_engine('sqlite:///:memory:', echo=False)
 _session = sessionmaker(bind=engine)
 
 session = _session()

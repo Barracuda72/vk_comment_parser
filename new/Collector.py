@@ -140,7 +140,7 @@ class Collector(object):
             vk_comments = self._get_comments_for_photo(user_id, photo_id)
 
         for vk_comment in vk_comments:
-            print (vk_comment)
+            #print (vk_comment)
             db_comment = db.session.query(db.Comment).get(vk_comment['id'])
             if (not db_comment):
                 db_comment = db.Comment(vk_comment['id'], vk_comment)
@@ -158,7 +158,7 @@ class Collector(object):
         vk_posts = self._get_posts(user_id)
 
         for vk_post in vk_posts:
-            print (vk_post)
+            #print (vk_post)
             db_post = db.session.query(db.Post).get( (vk_post['id'], vk_post['owner_id']) )
             if (not db_post):
                 # Post doesn't exists, create it
@@ -178,7 +178,7 @@ class Collector(object):
         vk_photos = self._get_photos(user_id)
 
         for vk_photo in vk_photos:
-            print (vk_photo)
+            #print (vk_photo)
             db_photo = db.session.query(db.Photo).get( (vk_photo['id'], vk_photo['owner_id']) )
             if (not db_photo):
                 # Photo doesn't exists, create it
