@@ -29,7 +29,10 @@ def add_login():
 def add_work():
     if request.method == 'POST':
         data = request.form['user_ids']
-        p.publish_work(data)
+        data = [x.strip() for x in data.split('\n')]
+        for user_id in data:
+            message = "{} {}".format(user_id, 0)
+            p.publish_work(message)
         return "Data added: {}".format(data)
     else:
         return "Use POST for user IDs!"
