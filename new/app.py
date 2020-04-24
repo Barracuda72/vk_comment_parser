@@ -41,10 +41,10 @@ def add_work():
         for user_id in data:
             try:
                 user_id = int(user_id)
+                message = "{} {}".format(user_id, 0)
+                p.publish_work(message)
             except Exception as e:
                 errors.append("Error processing UID '{}': {}".format(user_id, e))
-            message = "{} {}".format(user_id, 0)
-            p.publish_work(message)
         if (len(errors) == 0):
             return "Data added: {}".format(data)
         else:
