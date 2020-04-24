@@ -3,7 +3,7 @@
 from flask import Flask
 from flask import request
 from flask import render_template
-from multiprocessing import Thread
+from threading import Thread
 
 from Application import Application
 from Populator import Populator
