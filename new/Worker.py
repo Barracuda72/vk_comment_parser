@@ -17,21 +17,27 @@ class Worker(object):
         # Establish connection
         self.connection = pika.BlockingConnection(pika.ConnectionParameters(host=config.rabbitmq.host, credentials=credentials))
         
-        # Create communication channel
-        self.channel = self.connection.channel()
+        # Create communication channel for read
+        self.channel_read = self.connection.channel()
+
+        # And a separete one for write
+        self.channel_write = self.connection.channel()
 
         # Declare durable queue (its content will be saved in case of something going wrong, so we won't lose unprocessed messages)
-        self.channel.queue_declare(queue=self.queue_name, durable=True)
+        self.channel_read.queue_declare(queue=self.queue_name, durable=True)
+
+        # Same for writing channel
+        self.channel_write.queue_declare(queue=self.queue_name, durable=True)
 
         # Tell RabbitMQ that we should confirm message processing and will consume only one message at a time
-        self.channel.basic_qos(prefetch_count=1)
+        self.channel_read.basic_qos(prefetch_count=1)
 
         # Set callback function for our queue
-        self.channel.basic_consume(on_message_callback=self.message_callback,
+        self.channel_read.basic_consume(on_message_callback=self.message_callback,
                       queue=self.queue_name)
 
         # Start consuming
-        self.channel.start_consuming()
+        self.channel_read.start_consuming()
 
     def message_callback(self, channel, method, properties, body):
         # Spawn separate thread to handle all the work, so Pika can properly communicate with RabbitMQ
@@ -63,7 +69,7 @@ class Worker(object):
         
     def produce_message(self, message):
         # Put message into queue
-        self.channel.basic_publish(exchange='',
+        self.channel_write.basic_publish(exchange='',
                       routing_key=self.queue_name,
                       body=message.encode('utf-8'),
                       properties=pika.BasicProperties(
