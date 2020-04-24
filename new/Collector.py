@@ -182,7 +182,7 @@ class Collector(object):
             db_photo = db.session.query(db.Photo).get( (vk_photo['id'], vk_photo['owner_id']) )
             if (not db_photo):
                 # Photo doesn't exists, create it
-                db_photo = db.photo(vk_photo['id'], vk_photo)
+                db_photo = db.Photo(vk_photo['id'], vk_photo)
                 db.session.add(db_photo)
 
             users_replied.extend(self.collect_comments_for_post_or_photo(user_id, photo_id = vk_photo['id']))
