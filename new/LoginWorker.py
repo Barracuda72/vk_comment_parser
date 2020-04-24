@@ -2,7 +2,7 @@
 
 from multiprocessing import Process
 import config
-import Worker
+from Worker import Worker
 from VkWorker import VkWorker
 from Collector import Collector
 
