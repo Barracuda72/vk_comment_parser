@@ -1,7 +1,7 @@
 #!/usr/bin/env false
 
 import config
-import Worker
+from Worker import Worker
 
 class VkWorker(Worker):
     def __init__(self, collector):
