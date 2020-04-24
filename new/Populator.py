@@ -17,7 +17,7 @@ class Populator(object):
 
     def _publish(self, queue_name, data):
         self.channel.basic_publish(exchange='',
-                      queue_name,
+                      routing_key=queue_name,
                       body=data.encode('utf-8'),
                       properties=pika.BasicProperties(
                          delivery_mode = 2, # make message persistent
