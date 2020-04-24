@@ -6,7 +6,8 @@ class rabbitmq(object):
     host = "localhost"
     username = "guest"
     password = "guest"
-    queue = "queue_name"
+    work_queue = "work_queue_name"
+    login_queue = "login_queue_name"
 
 class postgres(object):
     username = "username"

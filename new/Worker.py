@@ -19,14 +19,14 @@ class Worker(object):
         self.channel = connection.channel()
 
         # Declare durable queue (its content will be saved in case of something going wrong, so we won't lose unprocessed messages)
-        self.channel.queue_declare(queue=config.rabbitmq.queue, durable=True)
+        self.channel.queue_declare(queue=config.rabbitmq.work_queue, durable=True)
 
         # Tell RabbitMQ that we should confirm message processing and will consume only one message at a time
         self.channel.basic_qos(prefetch_count=1)
 
         # Set callback function for our queue
         self.channel.basic_consume(self.message_callback,
-                      queue=config.rabbitmq.queue)
+                      queue=config.rabbitmq.work_queue)
 
         # Start consuming
         self.channel.start_consuming()
@@ -58,7 +58,7 @@ class Worker(object):
     def produce_message(self, message):
         # Put message into queue
         self.channel.basic_publish(exchange='',
-                      routing_key=config.rabbitmq.queue,
+                      routing_key=config.rabbitmq.work_queue,
                       body=message.encode('utf-8'),
                       properties=pika.BasicProperties(
                          delivery_mode = 2, # Make message persistent

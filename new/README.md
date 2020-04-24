@@ -5,7 +5,7 @@
 - Install rabbitmq-server and python3-pika
 - Enable rabbitmq-server and start it with systemctl
 - Change default password with "rabbitmqctl change_password guest newpassword"
-- Edit config.py and set new password and queue name
+- Edit config.py and set new password and queues names
 
 ## Postgres
 

@@ -17,12 +17,12 @@ credentials = pika.PlainCredentials(config.rabbitmq.username, config.rabbitmq.pa
 connection = pika.BlockingConnection(pika.ConnectionParameters(host=config.rabbitmq.host, credentials=credentials))
 channel = connection.channel()
 
-channel.queue_declare(queue=config.rabbitmq.queue, durable=True)
+channel.queue_declare(queue=config.rabbitmq.work_queue, durable=True)
 
 for user_id in user_ids:
     message = "{} {}".format(user_id, 0)
     channel.basic_publish(exchange='',
-                      routing_key=config.rabbitmq.queue,
+                      routing_key=config.rabbitmq.work_queue,
                       body=message.encode('utf-8'),
                       properties=pika.BasicProperties(
                          delivery_mode = 2, # make message persistent
