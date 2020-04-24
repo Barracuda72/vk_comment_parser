@@ -3,22 +3,12 @@
 from flask import Flask
 from flask import request
 from flask import render_template
-from threading import Thread
 
-from Application import Application
 from Populator import Populator
 
 app = Flask(__name__)
 
-vk_app = Application()
-
 p = Populator()
-
-def start_processing():
-    vk_app.run()
-
-t = Thread(target = start_processing, args = ())
-t.start()
 
 @app.route('/')
 def hello_world():
