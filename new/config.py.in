@@ -15,6 +15,7 @@ class postgres(object):
 
 class collector(object):
     depth = 1
+    max_photo_count = 100
     max_post_count = 100
     max_comment_count = 100
     user_time_delta = timedelta(days=90)

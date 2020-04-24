@@ -13,6 +13,7 @@ from entities.Education import Education
 from entities.University import University
 from entities.Faculty import Faculty
 from entities.Post import Post
+from entities.Photo import Photo
 from entities.Comment import Comment
 
 engine = create_engine('sqlite:///:memory:', echo=True)

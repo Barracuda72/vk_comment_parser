@@ -54,6 +54,14 @@ class Collector(object):
             print ("Exception: {}".format(e))
             return []
 
+    # Return comments for photo
+    def _get_comments_for_photo(self, user_id, photo_id):
+        try:
+            return self.tools.get_all('photos.getComments', config.collector.max_comment_count, {'owner_id': user_id, 'photo_id': photo_id, 'need_likes': True})['items']
+        except vk_api.exceptions.VkToolsException as e:
+            print ("Exception: {}".format(e))
+            return []
+
     # Create new user in the database with all stuff
     def _create_user(self, user_id, vk_user):
         # Check city and add it if neccessary
@@ -112,11 +120,25 @@ class Collector(object):
             print ("Exception: {}".format(e))
             return []
 
+    def _get_photos(self, user_id):
+        try:
+            return self.tools.get_all('photos.getAll', config.collector.max_photo_count, {'owner_id': user_id})['items']
+        except vk_api.exceptions.VkToolsException as e:
+            print ("Exception: {}".format(e))
+            return []
+
     # Returns IDs of all users that commented on post
-    def collect_comments_for_post(self, user_id, post_id):
+    def collect_comments_for_post_or_photo(self, user_id, post_id=None, photo_id=None):
+        if (not post_id and not photo_id) or (post_id and photo_id):
+            raise Exception("You should specify one (and only one) of post_id and photo_id!")
+
         users_replied = []
 
-        vk_comments = self._get_comments_for_post(user_id, post_id)
+        if (post_id):
+            vk_comments = self._get_comments_for_post(user_id, post_id)
+        else:
+            vk_comments = self._get_comments_for_photo(user_id, photo_id)
+
         for vk_comment in vk_comments:
             print (vk_comment)
             db_comment = db.session.query(db.Comment).get(vk_comment['id'])
@@ -143,7 +165,27 @@ class Collector(object):
                 db_post = db.Post(vk_post['id'], vk_post)
                 db.session.add(db_post)
 
-            users_replied.extend(self.collect_comments_for_post(user_id, vk_post['id']))
+            users_replied.extend(self.collect_comments_for_post_or_photo(user_id, post_id = vk_post['id']))
+
+        db.session.commit()
+
+        return users_replied
+
+    # Returns IDs of the users that commented on the photos of current user
+    def collect_photos_with_comments(self, user_id):
+        users_replied = []
+
+        vk_photos = self._get_photos(user_id)
+
+        for vk_photo in vk_photos:
+            print (vk_photo)
+            db_photo = db.session.query(db.Photo).get( (vk_photo['id'], vk_photo['owner_id']) )
+            if (not db_photo):
+                # Photo doesn't exists, create it
+                db_photo = db.photo(vk_photo['id'], vk_photo)
+                db.session.add(db_photo)
+
+            users_replied.extend(self.collect_comments_for_post_or_photo(user_id, photo_id = vk_photo['id']))
 
         db.session.commit()
 
@@ -168,4 +210,7 @@ class Collector(object):
 
         #print (db_user)
 
-        return self.collect_posts_with_comments(user_id)
+        users_from_posts = self.collect_posts_with_comments(user_id)
+        users_from_photos = self.collect_photos_with_comments(user_id)
+
+        return users_from_posts + users_from_photos
