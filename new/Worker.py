@@ -4,8 +4,8 @@ import pika
 import config
 
 class Worker(object):
-    def __init__(self, collector):
-        self.vk_collector = collector
+    def __init__(self, queue_name):
+        self.queue_name = queue_name
         self.rabbit_connect()
 
     def rabbit_connect(self):
@@ -19,14 +19,14 @@ class Worker(object):
         self.channel = connection.channel()
 
         # Declare durable queue (its content will be saved in case of something going wrong, so we won't lose unprocessed messages)
-        self.channel.queue_declare(queue=config.rabbitmq.work_queue, durable=True)
+        self.channel.queue_declare(queue=self.queue_name, durable=True)
 
         # Tell RabbitMQ that we should confirm message processing and will consume only one message at a time
         self.channel.basic_qos(prefetch_count=1)
 
         # Set callback function for our queue
         self.channel.basic_consume(self.message_callback,
-                      queue=config.rabbitmq.work_queue)
+                      queue=self.queue_name)
 
         # Start consuming
         self.channel.start_consuming()
@@ -42,23 +42,13 @@ class Worker(object):
         channel.basic_ack(delivery_tag = method.delivery_tag)
 
     def process_message(self, message):
-        # Split message into parts
-        user, depth = [int(x) for x in message.split()]
-
-        # If current user recursion depth is less than configured, collect user data
-        if (depth <= config.collector.depth):
-            # Collect user data and retrieve user IDs of users whose data should be collected recursively
-            users = self.vk_collector.collect_user(user)
-
-            # If current recursion depth is less than maximum, then put tasks for recursive processing of returned users
-            if (depth < config.collector.depth):
-                for user in users:
-                    self.produce_message("{} {}".format(user, depth + 1))
+        # Generic message processing stub
+        print ("Message from queue '{}': '{}'".format(self.queue_name, message))
         
     def produce_message(self, message):
         # Put message into queue
         self.channel.basic_publish(exchange='',
-                      routing_key=config.rabbitmq.work_queue,
+                      routing_key=self.queue_name,
                       body=message.encode('utf-8'),
                       properties=pika.BasicProperties(
                          delivery_mode = 2, # Make message persistent

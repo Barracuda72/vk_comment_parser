@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from multiprocessing import Pool
-from Worker import Worker
+from VkWorker import VkWorker
 from Collector import Collector
 import config
 import credentials
@@ -14,7 +14,7 @@ class Application(object):
     def work(self, login, password, proxy=None):
         print ("Spawning thread {}, proxy {}".format(login, proxy))
         collector = Collector(login, password, proxy)
-        worker = Worker(collector)
+        worker = VkWorker(collector)
 
     def run(self):
         with Pool(self.pool_size) as p:
