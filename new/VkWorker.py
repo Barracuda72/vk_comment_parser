@@ -3,7 +3,7 @@
 import config
 import Worker
 
-class Worker(VkWorker):
+class VkWorker(Worker):
     def __init__(self, collector):
         self.vk_collector = collector
         super().__init__(config.rabbitmq.work_queue)
