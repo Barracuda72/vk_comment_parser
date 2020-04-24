@@ -1,24 +1,13 @@
 #!/usr/bin/env python3
 
-from multiprocessing import Pool
-from VkWorker import VkWorker
-from Collector import Collector
-import config
-import credentials
+from LoginWorker import LoginWorker
 
 class Application(object):
     def __init__(self):
-        self.creds = credentials.login_list
-        self.pool_size = len(self.creds)
-
-    def work(self, login, password, proxy=None):
-        print ("Spawning thread {}, proxy {}".format(login, proxy))
-        collector = Collector(login, password, proxy)
-        worker = VkWorker(collector)
+        self.worker = None 
 
     def run(self):
-        with Pool(self.pool_size) as p:
-            p.starmap(self.work, self.creds)
+        self.worker = LoginWorker()
 
 if (__name__ == '__main__'):
     app = Application()
