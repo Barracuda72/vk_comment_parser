@@ -25,7 +25,7 @@ class Worker(object):
         self.channel.basic_qos(prefetch_count=1)
 
         # Set callback function for our queue
-        self.channel.basic_consume(self.message_callback,
+        self.channel.basic_consume(on_message_callback=self.message_callback,
                       queue=self.queue_name)
 
         # Start consuming
