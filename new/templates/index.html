@@ -1,0 +1,20 @@
+<!doctype html>
+<title>Hello from Flask</title>
+{% if name %}
+  <h1>Hello {{ name }}!</h1>
+{% else %}
+  <h1>Hello, World!</h1>
+{% endif %}
+<form action='/add_login' method='post'>
+  <label for="username">Username (phone):</label><br/>
+  <input type="text" id="username" name="username"><br/>
+  <label for="password">Password:</label><br/>
+  <input type="text" id="password" name="password"><br/>
+  <input type="submit" value="Add to pool">
+</form>
+<br/>
+<form action='/add_work' method='post' id='user_data' enctype='multipart/form-data'>
+  <label for="user_ids">VK User IDs:</label><br/>
+  <textarea name="user_ids" id="user_ids" form='user_data'>Enter user IDs here</textarea><br/>
+  <input type="submit" value="Add to pool">
+</form>
