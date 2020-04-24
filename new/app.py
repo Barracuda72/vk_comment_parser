@@ -6,7 +6,7 @@ from flask import render_template
 
 app = Flask(__name__)
 
-#p = Populator()
+p = Populator()
 
 @app.route('/')
 def hello_world():
@@ -18,7 +18,7 @@ def add_login():
         username = request.form['username']
         password = request.form['password']
         data = "{} {}".format(username, password)
-        #p.populate_login(data)
+        p.populate_login(data)
         return "Data added: {}".format(data)
     else:
         return "Use POST for credentials!"
@@ -27,7 +27,7 @@ def add_login():
 def add_work():
     if request.method == 'POST':
         data = request.form['user_ids']
-        #p.populate_work(data)
+        p.populate_work(data)
         return "Data added: {}".format(data)
     else:
         return "Use POST for user IDs!"
