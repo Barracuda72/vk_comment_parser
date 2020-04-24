@@ -15,4 +15,4 @@ vk_credentials = [x.strip() for x in open(filename, "r").readlines()]
 p = Populator()
 
 for message in vk_credentials:
-    p.populate_login(message)
+    p.publish_login(message)

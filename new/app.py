@@ -4,6 +4,8 @@ from flask import Flask
 from flask import request
 from flask import render_template
 
+from Populator import Populator
+
 app = Flask(__name__)
 
 p = Populator()
@@ -18,7 +20,7 @@ def add_login():
         username = request.form['username']
         password = request.form['password']
         data = "{} {}".format(username, password)
-        p.populate_login(data)
+        p.publish_login(data)
         return "Data added: {}".format(data)
     else:
         return "Use POST for credentials!"
@@ -27,7 +29,7 @@ def add_login():
 def add_work():
     if request.method == 'POST':
         data = request.form['user_ids']
-        p.populate_work(data)
+        p.publish_work(data)
         return "Data added: {}".format(data)
     else:
         return "Use POST for user IDs!"

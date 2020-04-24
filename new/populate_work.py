@@ -14,4 +14,4 @@ p = Populator()
 
 for user_id in user_ids:
     message = "{} {}".format(user_id, 0)
-    p.populate_work(message)
+    p.publish_work(message)
