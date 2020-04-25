@@ -1,12 +1,14 @@
 #!/usr/bin/env false
 
 from threading import Thread
+from multiprocessing import Queue
 import pika
 import config
 
 class Worker(object):
     def __init__(self, queue_name):
         self.queue_name = queue_name
+        self.send_queue = Queue()
         self.threads = []
         self.rabbit_connect()
 
@@ -62,6 +64,13 @@ class Worker(object):
             channel.basic_ack(delivery_tag = delivery_tag)
         else:
             pass
+        
+        # Send all messages that were produced
+        print ("Send remaining messages")
+        while not self.send_queue.empty():
+            message = self.send_queue.get()
+            print (message)
+            self.send_message(message)
 
     def process_message(self, message):
         # Generic message processing stub
@@ -69,6 +78,9 @@ class Worker(object):
         
     def produce_message(self, message):
         # Put message into queue
+        self.send_queue.put(message)
+
+    def send_message(self, message):
         self.channel_write.basic_publish(exchange='',
                       routing_key=self.queue_name,
                       body=message.encode('utf-8'),
