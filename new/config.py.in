@@ -10,6 +10,7 @@ class rabbitmq(object):
     login_queue = "login_queue_name"
 
 class postgres(object):
+    host = "localhost"
     username = "username"
     password = "password"
     database = "database"
