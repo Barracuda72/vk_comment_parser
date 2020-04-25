@@ -69,7 +69,7 @@ class Worker(object):
         print ("Send remaining messages")
         while not self.send_queue.empty():
             message = self.send_queue.get()
-            print (message)
+            #print (message)
             self.send_message(message)
 
     def process_message(self, message):
@@ -79,6 +79,7 @@ class Worker(object):
     def produce_message(self, message):
         # Put message into queue
         self.send_queue.put(message)
+        #print ("Putting message: {}".format(message))
 
     def send_message(self, message):
         self.channel_write.basic_publish(exchange='',
