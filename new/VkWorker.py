@@ -2,6 +2,7 @@
 
 import config
 from Worker import Worker
+import time
 
 class VkWorker(Worker):
     def __init__(self, collector):
@@ -14,10 +15,17 @@ class VkWorker(Worker):
 
         # If current user recursion depth is less than configured, collect user data
         if (depth <= config.collector.depth):
+            print ("Processing user {}".format(user))
             # Collect user data and retrieve user IDs of users whose data should be collected recursively
             users = self.vk_collector.collect_user(user)
+            print ("Processing {} done".format(user))
 
             # If current recursion depth is less than maximum, then put tasks for recursive processing of returned users
             if (depth < config.collector.depth):
+                print ("Going to process {} users".format(len(users)))
                 for user in users:
                     self.produce_message("{} {}".format(user, depth + 1))
+            else:
+                print("Reached depth {}, not going further".format(depth))
+        else:
+            print("User {}, depth {} is too big, skipping".format(user, depth))
