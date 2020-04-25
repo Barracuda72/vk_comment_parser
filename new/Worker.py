@@ -9,7 +9,7 @@ class Worker(object):
     def __init__(self, queue_name):
         self.queue_name = queue_name
         self.send_queue = Queue()
-        self.threads = []
+        self.work_thread = None
         self.rabbit_connect()
 
     def rabbit_connect(self):
@@ -46,7 +46,7 @@ class Worker(object):
         # TODO: BEWARE OF RACE CONDITIONS IN CASE YOU INCREASE prefetch_count!
         t = Thread(target=self.decode_message, args=(channel, method, body))
         t.start()
-        self.threads.append(t)
+        self.work_thread = t # TODO: check if old thread already finished processing!
 
     def decode_message(self, channel, method, body):
         # Convert body to UTF-8 string
