@@ -10,7 +10,8 @@ class Post(Base):
     text = Column(String)
     date = Column(Integer)
 
-    owner_id = Column(Integer, ForeignKey('user.id'), primary_key=True)
+    #owner_id = Column(Integer, ForeignKey('user.id'), primary_key=True)
+    owner_id = Column(Integer, ForeignKey('user.id'))
     owner = relationship('User', foreign_keys=[owner_id])
 
     from_id = Column(Integer, ForeignKey('user.id'))
