@@ -1,27 +1,31 @@
 #!/usr/bin/env false
 
-import pika
+from kombu import Connection, Exchange, Producer, Queue
 import config
 
 class Populator(object):
     def __init__(self):
-        credentials = pika.PlainCredentials(config.rabbitmq.username, config.rabbitmq.password)
-        self.connection = pika.BlockingConnection(pika.ConnectionParameters(host=config.rabbitmq.host, credentials=credentials))
+        url = "amqp://{}:{}@{}:5672/".format(config.rabbitmq.username, config.rabbitmq.password, config.rabbitmq.host)
+        self.connection = Connection(url)
         self.channel = self.connection.channel()
 
-        self.channel.queue_declare(queue=config.rabbitmq.login_queue, durable=True)
-        self.channel.queue_declare(queue=config.rabbitmq.work_queue, durable=True)
+        self.exchange = Exchange("", type="direct", durable=True)
+
+        self.producer = Producer(exchange=self.exchange, channel=self.channel, serializer="pickle")
+
+        self.login_queue = Queue(name=config.rabbitmq.login_queue, exchange=self.exchange, routing_key=config.rabbitmq.login_queue, durable=True)
+        self.login_queue.maybe_bind(self.connection)
+        self.login_queue.declare()
+
+        self.work_queue = Queue(name=config.rabbitmq.work_queue, exchange=self.exchange, routing_key=config.rabbitmq.work_queue, durable=True)
+        self.work_queue.maybe_bind(self.connection)
+        self.work_queue.declare()
 
     def __del__(self):
         self.connection.close()
 
     def _publish(self, queue_name, data):
-        self.channel.basic_publish(exchange='',
-                      routing_key=queue_name,
-                      body=data.encode('utf-8'),
-                      properties=pika.BasicProperties(
-                         delivery_mode = 2, # make message persistent
-                      ))
+        self.producer.publish(data.encode('utf-8'), routing_key=queue_name, retry=True, delivery_mode=2)
 
     def publish_login(self, credentials):
         self._publish(config.rabbitmq.login_queue, credentials)
