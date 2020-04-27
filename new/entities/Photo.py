@@ -6,8 +6,8 @@ from entities.Base import Base
 
 class Photo(Base):
     __tablename__ = "photo"
-    id = Column(Integer, primary_key=True)
-    vk_id = Column(Integer)
+    unique_id = Column(Integer, primary_key=True)
+    id = Column(Integer)
     date = Column(Integer)
 
     #owner_id = Column(Integer, ForeignKey('user.id'), primary_key=True)
@@ -19,7 +19,7 @@ class Photo(Base):
     reposts_count = Column(Integer)
 
     def __init__(self, photo):
-        self.vk_id = photo.get('id')
+        self.id = photo.get('id')
         self.text = photo.get('text')
         self.owner_id = photo.get('owner_id')
         self.date = photo.get('date')

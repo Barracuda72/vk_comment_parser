@@ -46,6 +46,12 @@ class Collector(object):
     def _get_user_wall_posts(self, user_id):
         return self.tools.get_all('wall.get', config.collector.max_post_count, {'owner_id': user_id})['items']
 
+    # Return specific user posts
+    def _get_specific_user_wall_posts(self, user_id, posts):
+        posts = [str(user_id) + "_" + str(post_id) for post_id in posts]
+        posts = ",".join(posts)
+        return self.vk.wall.getById(posts = posts)['items']
+
     # Return comments for post
     def _get_comments_for_post(self, user_id, post_id):
         try:
@@ -145,18 +151,11 @@ class Collector(object):
             return []
 
     def collect_comments_for_photo(self, user_id, photo_id, real_id):
-        # Map for transforming reply_to_comment into real comment IDs
-        replies_id_map = {}
-        # List of comments that have "reply_to_comment" field
-        replies = []
-        # List of replied users
-        users_replied = []
-
         vk_comments = self._get_comments_for_photo(user_id, photo_id)
 
         for vk_comment in vk_comments:
-            db_comment = db.session.query(db.Comment).filter_by(
-                vk_id = vk_comment['id'],
+            db_comment = db.session.query(db.PhotoComment).filter_by(
+                id = vk_comment['id'],
                 photo_id = real_id
             ).first()
 
@@ -165,29 +164,15 @@ class Collector(object):
                 vk_comment['pid'] = real_id
 
                 # Create comment
-                db_comment = db.Comment(vk_comment)
+                db_comment = db.PhotoComment(vk_comment)
 
                 # Create empty record for author if it doesn't exist
                 db_user = self._get_user(db_comment.from_id)
 
                 db.session.add(db_comment)
 
-                # Commit comment, so it'll receive proper ID
-                db.session.commit()
-
                 # Append author to the list of users commented here
                 users_replied.append(db_comment.from_id)
-
-                # Schedule comment to be fixed, if neccessary
-                if (db_comment.reply_to_comment):
-                    replies.append(db_comment)
-
-            replies_id_map[db_comment.vk_id] = db_comment.id
-
-        # Fix all "reply to" fields
-        for reply in replies:
-            reply.reply_to_comment = replies_id_map[reply.reply_to_comment]
-            db.session.add(reply)
 
         db.session.commit()
 
@@ -200,12 +185,14 @@ class Collector(object):
         replies = []
         # List of replied users
         users_replied = []
+        # New comments
+        new_comments = []
 
         vk_comments = self._get_comments_for_post(user_id, post_id)
 
         for vk_comment in vk_comments:
-            db_comment = db.session.query(db.Comment).filter_by(
-                vk_id = vk_comment['id'],
+            db_comment = db.session.query(db.WallComment).filter_by(
+                id = vk_comment['id'],
                 post_id = real_id
             ).first()
 
@@ -214,34 +201,64 @@ class Collector(object):
                 vk_comment['post_id'] = real_id
 
                 # Create comment
-                db_comment = db.Comment(vk_comment)
+                db_comment = db.WallComment(vk_comment)
 
                 # Create empty record for author if it doesn't exist
                 db_user = self._get_user(db_comment.from_id)
 
-                db.session.add(db_comment)
-
-                # Commit comment, so it'll receive proper ID
-                db.session.commit()
-
                 # Append author to the list of users commented here
                 users_replied.append(db_comment.from_id)
-
-                # Schedule comment to be fixed, if neccessary
+                
                 if (db_comment.reply_to_comment):
                     replies.append(db_comment)
-
-            replies_id_map[db_comment.vk_id] = db_comment.id
+                else:
+                    db.session.add(db_comment)
+                    db.session.commit()
+                    replies_id_map[db_comment.id] = replies_id_map[db_comment.unique_id]
+            else:
+                replies_id_map[db_comment.id] = replies_id_map[db_comment.unique_id]
 
         # Fix all "reply to" fields
-        for reply in replies:
-            reply.reply_to_comment = replies_id_map[reply.reply_to_comment]
-            db.session.add(reply)
+        while len(replies) > 0:
+            unprocessed_replies = []
+            for db_comment in replies:
+                unique_id = replies_id_map.get(db_comment.reply_to_comment)
+                if (unique_id):
+                    db_comment.reply_to_comment = unique_id
+                    db.session.add(db_comment)
+                    db.session.commit()
+                    replies_id_map[db_comment.id] = replies_id_map[db_comment.unique_id]
+                else:
+                    unprocessed_replies.append(db_comment)
+
+            replies = unprocessed_replies
 
         db.session.commit()
 
         return users_replied
 
+    def get_referenced_post(self, owner_id, post_id):
+        db_user = self._get_user(owner_id)
+
+        db_post = db.session.query(db.Post).filter_by(
+            id = post_id,
+            owner_id = owner_id
+        ).first()
+
+        if (not db_post):
+            vk_post = self._get_specific_user_wall_posts(owner_id, [post_id])
+            db_post = db.Post(vk_post)
+            db_from = self._get_user(db_record.from_id)
+
+            if (vk_post.get('reply_post_id')):
+                parent_post = self.get_referenced_post(vk_post['reply_owner_id'], vk_post['reply_post_id'])
+                db_post.reply_post_id = parent_post.unique_id
+
+            db.session.add(db_post)
+            db.session.commit()
+
+        return db_post
+    
     # Returns IDs of the users that commented on the post or photo of current user
     def collect_records_with_comments(self, user_id, db_Class, getter, comment_collector):
         users_replied = []
@@ -250,7 +267,7 @@ class Collector(object):
 
         for vk_record in vk_records:
             db_record = db.session.query(db_Class).filter_by( 
-                vk_id = vk_record['id'], 
+                id = vk_record['id'], 
                 owner_id = vk_record['owner_id'] 
             ).first()
 
@@ -261,16 +278,22 @@ class Collector(object):
                 # TODO: HACK: do better!
                 if (db_Class == db.Post):
                     # Photos don't have from_id
+                    # Also they don't have recursive dependencies
                     # Create empty record for author if it doesn't exists
                     db_user = self._get_user(db_record.from_id)
 
                     # Append author to the list of users posted here
                     users_replied.append(db_record.from_id)
 
+                    if (vk_record.get("reply_post_id")):
+                        parent_post = self.get_referenced_post(vk_post['reply_owner_id'], vk_post['reply_post_id'])
+                        db_record.reply_post_id = parent_post.unique_id
+                        users_replied.append(int(vk_post['reply_owner_id']))
+
                 db.session.add(db_record)
                 db.session.commit()
 
-            users_replied.extend(comment_collector(user_id, vk_record['id'], db_record.id))
+            users_replied.extend(comment_collector(user_id, vk_record['id'], db_record.unique_id))
 
         db.session.commit()
 

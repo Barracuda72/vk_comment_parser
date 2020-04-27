@@ -6,8 +6,8 @@ from entities.Base import Base
 
 class Post(Base):
     __tablename__ = "post"
-    id = Column(Integer, primary_key=True)
-    vk_id = Column(Integer)
+    unique_id = Column(Integer, primary_key=True)
+    id = Column(Integer)
     text = Column(String)
     date = Column(Integer)
 
@@ -18,7 +18,7 @@ class Post(Base):
     from_id = Column(Integer, ForeignKey('user.id'))
     from_ = relationship('User', foreign_keys=[from_id])
 
-    reply_post_id = Column(Integer, ForeignKey('post.id'))
+    reply_post_id = Column(Integer, ForeignKey('post.unique_id'))
     reply_post = relationship('Post')
 
     comments_count = Column(Integer)
@@ -27,7 +27,7 @@ class Post(Base):
     views_count = Column(Integer)
 
     def __init__(self, post):
-        self.vk_id = post.get('id')
+        self.id = post.get('id')
         self.text = post.get('text')
         self.owner_id = post.get('owner_id')
         self.from_id = post.get('from_id')
