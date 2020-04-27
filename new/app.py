@@ -10,6 +10,9 @@ app = Flask(__name__)
 
 p = Populator()
 
+username_pattern = re.compile("^\+\d{10,15}$")
+password_pattern = re.compile("^\w{6,20}$")
+
 @app.route('/')
 def hello_world():
     return render_template('index.html', name=None)
@@ -24,6 +27,20 @@ def add_login():
                 raise Exception("Username shouldn't be empty!")
             if (not password):
                 raise Exception("Password shouldn't be empty!")
+
+            user_match = username_pattern.match(username)
+            pass_match = password_pattern.match(password)
+
+            if (not user_match):
+                raise Exception("Username should be the phone number in format +79991234567!")
+            else:
+                username = user_match.group(0)
+
+            if (not pass_match):
+                raise Exception("Password should only contain letters in both cases, digits and underscore!")
+            else:
+                password = pass_match.group(0)
+
             data = "{} {}".format(username, password)
             p.publish_login(data)
             return "Data added: {}".format(data)
