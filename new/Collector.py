@@ -151,6 +151,8 @@ class Collector(object):
             return []
 
     def collect_comments_for_photo(self, user_id, photo_id, real_id):
+        users_replied = []
+
         vk_comments = self._get_comments_for_photo(user_id, photo_id)
 
         for vk_comment in vk_comments:
