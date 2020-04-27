@@ -8,6 +8,8 @@ from flask import render_template
 
 from Populator import Populator
 
+import database as db
+
 app = Flask(__name__)
 
 p = Populator()
@@ -17,7 +19,10 @@ password_pattern = re.compile("^\w{6,20}$")
 
 @app.route('/')
 def hello_world():
-    return render_template('index.html', name=None)
+    post_count = db.session.query(db.Post).count()
+    comment_count = db.session.query(db.Comment).count()
+    user_count = db.session.query(db.User).count()
+    return render_template('index.html', post_count=post_count, comment_count=comment_count, user_count=user_count)
 
 @app.route('/add_login', methods=['GET', 'POST'])
 def add_login():

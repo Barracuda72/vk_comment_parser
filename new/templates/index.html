@@ -5,6 +5,39 @@
 {% else %}
   <h1>Hello, World!</h1>
 {% endif %}
+<table>
+<tr>
+<th>
+Statistics
+</th>
+<th>
+Add new data
+</th>
+</tr>
+<tr/>
+<td>
+
+<table>
+
+<tr>
+<td>Total users count:</td>
+<td>{{ user_count }}</td>
+</tr>
+
+<tr>
+<td>Total posts count:</td>
+<td>{{ post_count }}</td>
+</tr>
+
+<tr>
+<td>Total comments count:</td>
+<td>{{ comment_count }}</td>
+</tr>
+
+</table>
+
+</td>
+<td>
 <form action='/add_login' method='post'>
   <label for="username">Username (phone):</label><br/>
   <input type="text" id="username" name="username"><br/>
@@ -15,6 +48,9 @@
 <br/>
 <form action='/add_work' method='post' id='user_data' enctype='multipart/form-data'>
   <label for="user_ids">VK User IDs:</label><br/>
-  <textarea name="user_ids" id="user_ids" form='user_data'>Enter user IDs here</textarea><br/>
+  <textarea name="user_ids" id="user_ids" form='user_data' rows=50 cols=200>Enter user IDs here</textarea><br/>
   <input type="submit" value="Add to pool">
 </form>
+</td>
+</tr>
+</table>
