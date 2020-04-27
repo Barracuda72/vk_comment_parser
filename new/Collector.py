@@ -63,7 +63,7 @@ class Collector(object):
             return []
 
     # Create new user or retrieve the existing one
-    def _get_user(self, user_id, only_create=False):
+    def _get_user(self, user_id):
         # Search user in the database
         db_user = db.session.query(db.User).get(user_id)
         
@@ -79,13 +79,7 @@ class Collector(object):
 
         #print (db_user)
 
-        if (only_create):
-            if (created):
-                return db_user
-            else:
-                return None
-        else:
-            return db_user
+        return (db_user, created)
 
     # Create new user in the database with all stuff
     def _create_user(self, user_id, vk_user):
@@ -172,10 +166,10 @@ class Collector(object):
                 db_comment = db.Comment(vk_comment['id'], vk_comment)
 
                 # Create record for author if it doesn't exists
-                db_user = self._get_user(db_comment.from_id, only_create = True)
+                db_user, created = self._get_user(db_comment.from_id, only_create = True)
 
                 db.session.add(db_comment)
-                if (db_user):
+                if (created):
                     # HACK: mark this new user as retrieved long ago, so we won't miss him then the time comes
                     db_user.updated = datetime.fromtimestamp(0)
                     db.session.add(db_user)
@@ -232,14 +226,18 @@ class Collector(object):
     def collect_user(self, user_id):
         print ("Collecting user {}".format(user_id))
 
-        db_user = self._get_user(user_id)
+        db_user, created = self._get_user(user_id)
 
-        # Check that user update time was long ago
-        if (db_user.updated + config.collector.user_time_delta > datetime.utcnow()):
+        # Check that user update time was long ago or user was just created
+        if (created || (db_user.updated + config.collector.user_time_delta > datetime.utcnow())):
             print ("Skipping user, its data is new")
             return []
 
         users_from_posts = self.collect_posts_with_comments(user_id)
         users_from_photos = self.collect_photos_with_comments(user_id)
+
+        db_user.updated = datetime.utcnow()
+        db.session.add(db_user)
+        db.session.commit()
 
         return users_from_posts + users_from_photos
