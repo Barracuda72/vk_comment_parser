@@ -15,6 +15,8 @@ from entities.Faculty import Faculty
 from entities.Post import Post
 from entities.Photo import Photo
 from entities.Comment import Comment
+from entities.PhotoComment import PhotoComment
+from entities.PostComment import PostComment
 
 import config
 
