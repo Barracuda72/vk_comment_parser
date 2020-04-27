@@ -187,8 +187,11 @@ class Collector(object):
                 # Record doesn't exists, create it
                 db_record = db_Class(vk_record['id'], vk_record)
 
-                # Create empty record for author if it doesn't exists
-                db_user = self._get_user(db_record.from_id)
+                # TODO: HACK: do better!
+                if (db_Class == db.Post):
+                    # Photos don't have from_id
+                    # Create empty record for author if it doesn't exists
+                    db_user = self._get_user(db_record.from_id)
 
                 db.session.add(db_record)
 
