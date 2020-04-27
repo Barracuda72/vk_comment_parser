@@ -9,7 +9,8 @@ class Photo(Base):
     id = Column(Integer, primary_key=True)
     date = Column(Integer)
 
-    owner_id = Column(Integer, ForeignKey('user.id'), primary_key=True)
+    #owner_id = Column(Integer, ForeignKey('user.id'), primary_key=True)
+    owner_id = Column(Integer, ForeignKey('user.id'))
     owner = relationship('User', foreign_keys=[owner_id])
 
     comments_count = Column(Integer)
