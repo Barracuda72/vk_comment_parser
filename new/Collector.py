@@ -62,6 +62,31 @@ class Collector(object):
             print ("Exception: {}".format(e))
             return []
 
+    # Create new user or retrieve the existing one
+    def _get_user(self, user_id, only_create=False):
+        # Search user in the database
+        db_user = db.session.query(db.User).get(user_id)
+        
+        created = False
+
+        if (not db_user):
+            # Create new user
+            vk_user = self._get_user_data(user_id)
+            #print (vk_user)
+            db_user = self._create_user(user_id, vk_user)
+
+            created = True
+
+        #print (db_user)
+
+        if (only_create):
+            if (created):
+                return db_user
+            else:
+                return None
+        else:
+            return db_user
+
     # Create new user in the database with all stuff
     def _create_user(self, user_id, vk_user):
         # Check city and add it if neccessary
@@ -143,8 +168,19 @@ class Collector(object):
             #print (vk_comment)
             db_comment = db.session.query(db.Comment).get(vk_comment['id'])
             if (not db_comment):
+                # Create comment itself
                 db_comment = db.Comment(vk_comment['id'], vk_comment)
+
+                # Create record for author if it doesn't exists
+                db_user = self._get_user(db_comment.from_id, only_create = True)
+
                 db.session.add(db_comment)
+                if (db_user):
+                    # HACK: mark this new user as retrieved long ago, so we won't miss him then the time comes
+                    db_user.updated = datetime.fromtimestamp(0)
+                    db.session.add(db_user)
+
+                # Append author to the list of users commented here
                 users_replied.append(db_comment.from_id)
 
         db.session.commit()
@@ -194,21 +230,12 @@ class Collector(object):
     def collect_user(self, user_id):
         print ("Collecting user {}".format(user_id))
 
-        # Search user in the database
-        db_user = db.session.query(db.User).get(user_id)
-        
-        if (not db_user):
-            # Create new user
-            vk_user = self._get_user_data(user_id)
-            #print (vk_user)
-            db_user = self._create_user(user_id, vk_user)
-        else:
-            # Check that user update time was long ago
-            if (db_user.updated + config.collector.user_time_delta > datetime.utcnow()):
-                print ("Skipping user, its data is new")
-                return []
+        db_user = self._get_user(user_id)
 
-        #print (db_user)
+        # Check that user update time was long ago
+        if (db_user.updated + config.collector.user_time_delta > datetime.utcnow()):
+            print ("Skipping user, its data is new")
+            return []
 
         users_from_posts = self.collect_posts_with_comments(user_id)
         users_from_photos = self.collect_photos_with_comments(user_id)
