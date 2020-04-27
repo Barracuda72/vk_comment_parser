@@ -216,9 +216,9 @@ class Collector(object):
                 else:
                     db.session.add(db_comment)
                     db.session.commit()
-                    replies_id_map[db_comment.id] = replies_id_map[db_comment.unique_id]
+                    replies_id_map[db_comment.id] = db_comment.unique_id
             else:
-                replies_id_map[db_comment.id] = replies_id_map[db_comment.unique_id]
+                replies_id_map[db_comment.id] = db_comment.unique_id
 
         # Fix all "reply to" fields
         while len(replies) > 0:
@@ -229,7 +229,7 @@ class Collector(object):
                     db_comment.reply_to_comment = unique_id
                     db.session.add(db_comment)
                     db.session.commit()
-                    replies_id_map[db_comment.id] = replies_id_map[db_comment.unique_id]
+                    replies_id_map[db_comment.id] = db_comment.unique_id
                 else:
                     unprocessed_replies.append(db_comment)
 
