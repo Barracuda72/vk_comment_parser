@@ -6,6 +6,7 @@ import hashlib
 import config
 import database as db
 from datetime import datetime
+from sqlalchemy.exc import IntegrityError
 
 class Collector(object):
     user_fields = """
@@ -88,18 +89,30 @@ class Collector(object):
         # Check city and add it if neccessary
         vk_city = vk_user.get('city')
         if (vk_city):
-            db_city = db.session.query(db.City).get(vk_city['id'])
-            if (not db_city):
-                db_city = db.City(vk_city['id'], vk_city['title'])
-                db.session.add(db_city)
+            db_city = None
+            while not db_city:
+                db_city = db.session.query(db.City).get(vk_city['id'])
+                if (not db_city):
+                    try:
+                        with db.session.begin_nested():
+                            db_city = db.City(vk_city['id'], vk_city['title'])
+                            db.session.add(db_city)
+                    except IntegrityError as e:
+                        print ("Integrity error {}, probably someone already created this object")
 
         # Check country and add it if neccessary
         vk_country = vk_user.get('country')
         if (vk_country):
-            db_country = db.session.query(db.Country).get(vk_country['id'])
-            if (not db_country):
-                db_country = db.Country(vk_country['id'], vk_country['title'])
-                db.session.add(db_country)
+            db_country = None
+            while not db_country:
+                db_country = db.session.query(db.Country).get(vk_country['id'])
+                if (not db_country):
+                    try:
+                        with db.session.begin_nested():
+                            db_country = db.Country(vk_country['id'], vk_country['title'])
+                            db.session.add(db_country)
+                    except IntegrityError as e:
+                        print ("Integrity error {}, probably someone already created this object")
 
         # Check education and add it if neccessary
         vk_education = vk_user.get('education')
