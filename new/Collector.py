@@ -193,10 +193,10 @@ class Collector(object):
                     # Create empty record for author if it doesn't exists
                     db_user = self._get_user(db_record.from_id)
 
-                db.session.add(db_record)
+                    # Append author to the list of users posted here
+                    users_replied.append(db_record.from_id)
 
-                # Append author to the list of users posted here
-                users_replied.append(db_record.from_id)
+                db.session.add(db_record)
 
             # TODO: HACK: do better!
             if (db_Class == db.Post):
@@ -225,4 +225,4 @@ class Collector(object):
         db.session.add(db_user)
         db.session.commit()
 
-        return users_from_posts + users_from_photos
+        return list(set(users_from_posts + users_from_photos))
