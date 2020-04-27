@@ -17,7 +17,7 @@ class PhotoComment(Comment):
     }
 
     def __init__(self, comment):
-        super().__init__(self, comment)
+        super().__init__(comment)
         self.photo_id = comment.get('pid')
 
     def __repr__(self):

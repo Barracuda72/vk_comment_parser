@@ -17,6 +17,8 @@ class Comment(Base):
     reply_to_comment_id = Column(Integer, ForeignKey('comment.unique_id'))
     reply_to_comment = relationship('Comment')
 
+    type = Column(String(50))
+
     __mapper_args__ = {
         'polymorphic_identity':'comment',
         'polymorphic_on':type

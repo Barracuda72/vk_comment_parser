@@ -17,7 +17,7 @@ class WallComment(Comment):
     }
 
     def __init__(self, comment):
-        super().__init__(self, comment)
+        super().__init__(comment)
         self.post_id = comment.get('post_id')
 
     def __repr__(self):
