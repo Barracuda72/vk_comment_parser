@@ -67,19 +67,15 @@ class Collector(object):
         # Search user in the database
         db_user = db.session.query(db.User).get(user_id)
         
-        created = False
-
         if (not db_user):
             # Create new user
             vk_user = self._get_user_data(user_id)
             #print (vk_user)
             db_user = self._create_user(user_id, vk_user)
 
-            created = True
-
         #print (db_user)
 
-        return (db_user, created)
+        return db_user
 
     # Create new user in the database with all stuff
     def _create_user(self, user_id, vk_user):
@@ -126,7 +122,9 @@ class Collector(object):
         db_user = db.User(user_id, vk_user)
         if (vk_education):
             db_user.education_id = db_education.id
-        db_user.updated = datetime.utcnow()
+        
+        # HACK: mark this new user as retrieved long ago, so we won't miss him then the time comes
+        db_user.updated = datetime.fromtimestamp(0)
         db.session.add(db_user)
 
         db.session.commit()
@@ -165,14 +163,10 @@ class Collector(object):
                 # Create comment itself
                 db_comment = db.Comment(vk_comment['id'], vk_comment)
 
-                # Create record for author if it doesn't exists
-                db_user, created = self._get_user(db_comment.from_id, only_create = True)
+                # Create empty record for author if it doesn't exists
+                db_user = self._get_user(db_comment.from_id)
 
                 db.session.add(db_comment)
-                if (created):
-                    # HACK: mark this new user as retrieved long ago, so we won't miss him then the time comes
-                    db_user.updated = datetime.fromtimestamp(0)
-                    db.session.add(db_user)
 
                 # Append author to the list of users commented here
                 users_replied.append(db_comment.from_id)
@@ -226,10 +220,10 @@ class Collector(object):
     def collect_user(self, user_id):
         print ("Collecting user {}".format(user_id))
 
-        db_user, created = self._get_user(user_id)
+        db_user = self._get_user(user_id)
 
-        # Check that user update time was long ago or user was just created
-        if (created || (db_user.updated + config.collector.user_time_delta > datetime.utcnow())):
+        # Check that user update time was long ago and user was not just created
+        if (db_user.updated + config.collector.user_time_delta > datetime.utcnow()):
             print ("Skipping user, its data is new")
             return []
 
