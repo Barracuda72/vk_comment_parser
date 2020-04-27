@@ -39,7 +39,7 @@ def add_login():
                 username = user_match.group(0)
 
             if (not pass_match):
-                raise Exception("Password should only contain letters in both cases, digits and underscore!")
+                raise Exception("Password should have length in range [6,20] and  only contain letters in both cases, digits and underscore!")
             else:
                 password = pass_match.group(0)
 
