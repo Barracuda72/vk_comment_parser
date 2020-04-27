@@ -90,69 +90,72 @@ class Collector(object):
 
         return db_user
 
+    def _print_integrity_error(self, db_Class, e):
+        print ("Integrity error, probably someone already created this object ({}): {}".format(db_Class.__name__, e))
+
+    # Get or create simple binary relation (city, university, faculty, country, etc)
+    def _get_binary_relation(self, db_Class, id, name):
+        db_object = None
+        while not db_object:
+            db_object = db.session.query(db_Class).get(id)
+            if (not db_object):
+                try:
+                    with db.session.begin_nested():
+                        db_object = db_Class(id, name)
+                        db.session.add(db_object)
+                except IntegrityError as e: 
+                    self._print_integrity_error(db_Class, e)
+        return db_object
+
     # Create new user in the database with all stuff
     def _create_user(self, user_id, vk_user):
         # Check city and add it if neccessary
         vk_city = vk_user.get('city')
         if (vk_city):
-            db_city = None
-            while not db_city:
-                db_city = db.session.query(db.City).get(vk_city['id'])
-                if (not db_city):
-                    try:
-                        with db.session.begin_nested():
-                            db_city = db.City(vk_city['id'], vk_city['title'])
-                            db.session.add(db_city)
-                    except IntegrityError as e:
-                        print ("Integrity error, probably someone already created this object: {}".format(e))
+            db_city = self._get_binary_relation(db.City, vk_city['id'], vk_city['title'])
 
         # Check country and add it if neccessary
         vk_country = vk_user.get('country')
         if (vk_country):
-            db_country = None
-            while not db_country:
-                db_country = db.session.query(db.Country).get(vk_country['id'])
-                if (not db_country):
-                    try:
-                        with db.session.begin_nested():
-                            db_country = db.Country(vk_country['id'], vk_country['title'])
-                            db.session.add(db_country)
-                    except IntegrityError as e:
-                        print ("Integrity error, probably someone already created this object: {}".format(e))
+            db_country = self._get_binary_relation(db.Country, vk_country['id'], vk_country['title'])
 
         # Check education and add it if neccessary
         vk_education = vk_user.get('education')
         if (vk_education):
-            db_education = db.session.query(db.Education).filter_by(
-                        university = vk_education['university'], 
-                        faculty = vk_education['faculty'], 
-                        graduation = vk_education['graduation']
-                    ).first()
-            if (not db_education):
-                # Check University and Faculty, create them if neccessary
-                db_university = db.session.query(db.University).get(vk_educaiton['university'])
-                if (not db_university):
-                    db_university = db.University(vk_education['university'], vk_education['university_name'])
-                    db.session.add(db_university)
-                db_faculty = db.session.query(db.Faculty).get(vk_educaiton['faculty'])
-                if (not db_faculty):
-                    db_faculty = db.University(vk_education['faculty'], vk_education['faculty_name'])
-                    db.session.add(db_faculty)
-
-                db_education = db.Education(None, vk_education)
-                db.session.add(db_education)
+            db_education = None
+            while not db_education:
+                db_education = db.session.query(db.Education).filter_by(
+                            university = vk_education['university'], 
+                            faculty = vk_education['faculty'], 
+                            graduation = vk_education['graduation']
+                        ).first()
+                if (not db_education):
+                    # Check University and Faculty, create them if neccessary
+                    db_university = self._get_binary_relation(db.University, vk_education['university'], vk_education['university_name'])
+                    db_faculty = self._get_binary_relation(db.Faculty, vk_education['faculty'], vk_education['faculty_name'])
+    
+                    try:
+                        with db.session.begin_nested():
+                            db_education = db.Education(None, vk_education)
+                            db.session.add(db_education)
+                    except IntegrityError as e:
+                        self._print_integrity_error(db.Education, e)
 
         # TODO: connections, counters!
 
-        db_user = db.User(user_id, vk_user)
-        if (vk_education):
-            db_user.education_id = db_education.id
-        
-        # HACK: mark this new user as retrieved long ago, so we won't miss him then the time comes
-        db_user.updated = datetime.fromtimestamp(0)
-        db.session.add(db_user)
+        db_user = None
+        try:
+            with db.session.begin_nested():
+                db_user = db.User(user_id, vk_user)
+                if (vk_education):
+                    db_user.education_id = db_education.id
+            
+                # HACK: mark this new user as retrieved long ago, so we won't miss him then the time comes
+                db_user.updated = datetime.fromtimestamp(0)
+                db.session.add(db_user)
+        except IntegrityError as e:
+            self._print_integrity_error(db.User, e)
 
-        db.session.commit()
         return db_user
 
     def _get_posts(self, user_id):
