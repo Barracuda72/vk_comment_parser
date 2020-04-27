@@ -175,43 +175,31 @@ class Collector(object):
 
         return users_replied
 
-    # Returns IDs of the users that commented on the posts of current user
-    def collect_posts_with_comments(self, user_id):
+    # Returns IDs of the users that commented on the post or photo of current user
+    def collect_records_with_comments(self, user_id, db_Class, getter):
         users_replied = []
 
-        vk_posts = self._get_posts(user_id)
+        vk_records = getter(user_id)
 
-        for vk_post in vk_posts:
-            #print (vk_post)
-            #db_post = db.session.query(db.Post).get( (vk_post['id'], vk_post['owner_id']) )
-            db_post = db.session.query(db.Post).get( vk_post['id'] )
-            if (not db_post):
-                # Post doesn't exists, create it
-                db_post = db.Post(vk_post['id'], vk_post)
-                db.session.add(db_post)
+        for vk_record in vk_records:
+            db_record = db.session.query(db_Class).get( vk_record['id'] )
+            if (not db_record):
+                # Record doesn't exists, create it
+                db_record = db_Class(vk_record['id'], vk_record)
 
-            users_replied.extend(self.collect_comments_for_post_or_photo(user_id, post_id = vk_post['id']))
+                # Create empty record for author if it doesn't exists
+                db_user = self._get_user(db_record.from_id)
 
-        db.session.commit()
+                db.session.add(db_record)
 
-        return users_replied
+                # Append author to the list of users posted here
+                users_replied.append(db_record.from_id)
 
-    # Returns IDs of the users that commented on the photos of current user
-    def collect_photos_with_comments(self, user_id):
-        users_replied = []
-
-        vk_photos = self._get_photos(user_id)
-
-        for vk_photo in vk_photos:
-            #print (vk_photo)
-            #db_photo = db.session.query(db.Photo).get( (vk_photo['id'], vk_photo['owner_id']) )
-            db_photo = db.session.query(db.Photo).get( vk_photo['id'] )
-            if (not db_photo):
-                # Photo doesn't exists, create it
-                db_photo = db.Photo(vk_photo['id'], vk_photo)
-                db.session.add(db_photo)
-
-            users_replied.extend(self.collect_comments_for_post_or_photo(user_id, photo_id = vk_photo['id']))
+            # TODO: HACK: do better!
+            if (db_Class == db.Post):
+                users_replied.extend(self.collect_comments_for_post_or_photo(user_id, post_id = vk_record['id']))
+            else:
+                users_replied.extend(self.collect_comments_for_post_or_photo(user_id, photo_id = vk_record['id']))
 
         db.session.commit()
 
@@ -227,8 +215,8 @@ class Collector(object):
             print ("Skipping user, its data is new")
             return []
 
-        users_from_posts = self.collect_posts_with_comments(user_id)
-        users_from_photos = self.collect_photos_with_comments(user_id)
+        users_from_posts = self.collect_records_with_comments(user_id, db.Post, self._get_posts)
+        users_from_photos = self.collect_records_with_comments(user_id, db.Photo, self._get_photos)
 
         db_user.updated = datetime.utcnow()
         db.session.add(db_user)
