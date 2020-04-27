@@ -159,7 +159,8 @@ class Collector(object):
 
         for vk_post in vk_posts:
             #print (vk_post)
-            db_post = db.session.query(db.Post).get( (vk_post['id'], vk_post['owner_id']) )
+            #db_post = db.session.query(db.Post).get( (vk_post['id'], vk_post['owner_id']) )
+            db_post = db.session.query(db.Post).get( vk_post['id'] )
             if (not db_post):
                 # Post doesn't exists, create it
                 db_post = db.Post(vk_post['id'], vk_post)
@@ -179,7 +180,8 @@ class Collector(object):
 
         for vk_photo in vk_photos:
             #print (vk_photo)
-            db_photo = db.session.query(db.Photo).get( (vk_photo['id'], vk_photo['owner_id']) )
+            #db_photo = db.session.query(db.Photo).get( (vk_photo['id'], vk_photo['owner_id']) )
+            db_photo = db.session.query(db.Photo).get( vk_photo['id'] )
             if (not db_photo):
                 # Photo doesn't exists, create it
                 db_photo = db.Photo(vk_photo['id'], vk_photo)
