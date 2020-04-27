@@ -233,7 +233,7 @@ class Collector(object):
                 # Append author to the list of users commented here
                 users_replied.append(db_comment.from_id)
                 
-                if (db_comment.reply_to_comment):
+                if (db_comment.reply_to_comment_id):
                     replies.append(db_comment)
                 else:
                     db.session.add(db_comment)
@@ -246,9 +246,9 @@ class Collector(object):
         while len(replies) > 0:
             unprocessed_replies = []
             for db_comment in replies:
-                unique_id = replies_id_map.get(db_comment.reply_to_comment)
+                unique_id = replies_id_map.get(db_comment.reply_to_comment_id)
                 if (unique_id):
-                    db_comment.reply_to_comment = unique_id
+                    db_comment.reply_to_comment_id = unique_id
                     db.session.add(db_comment)
                     db.session.commit()
                     replies_id_map[db_comment.id] = db_comment.unique_id
