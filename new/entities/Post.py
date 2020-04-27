@@ -7,6 +7,7 @@ from entities.Base import Base
 class Post(Base):
     __tablename__ = "post"
     id = Column(Integer, primary_key=True)
+    vk_id = Column(Integer)
     text = Column(String)
     date = Column(Integer)
 
@@ -25,8 +26,8 @@ class Post(Base):
     reposts_count = Column(Integer)
     views_count = Column(Integer)
 
-    def __init__(self, id, post):
-        self.id = id
+    def __init__(self, post):
+        self.vk_id = post.get('id')
         self.text = post.get('text')
         self.owner_id = post.get('owner_id')
         self.from_id = post.get('from_id')
