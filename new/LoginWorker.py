@@ -4,7 +4,6 @@ from multiprocessing import Process
 import config
 from Worker import Worker
 from VkWorker import VkWorker
-from Collector import Collector
 
 class LoginWorker(Worker):
     def __init__(self):
@@ -13,6 +12,8 @@ class LoginWorker(Worker):
 
     def work(self, login, password, proxy=None):
         print ("Spawning thread {}, proxy {}".format(login, proxy))
+        # Move here to cope with psycopg restriction on being unable to use same session in different processes
+        from Collector import Collector
         collector = Collector(login, password, proxy)
         worker = VkWorker(collector)
 
