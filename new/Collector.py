@@ -225,4 +225,4 @@ class Collector(object):
         db.session.add(db_user)
         db.session.commit()
 
-        return users_from_posts + users_from_photos
+        return list(set(users_from_posts + users_from_photos))
