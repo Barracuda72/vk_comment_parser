@@ -144,48 +144,119 @@ class Collector(object):
             print ("Exception: {}".format(e))
             return []
 
-    # Returns IDs of all users that commented on post
-    def collect_comments_for_post_or_photo(self, user_id, post_id=None, photo_id=None):
-        if (not post_id and not photo_id) or (post_id and photo_id):
-            raise Exception("You should specify one (and only one) of post_id and photo_id!")
-
+    def collect_comments_for_photo(self, user_id, photo_id, real_id):
+        # Map for transforming reply_to_comment into real comment IDs
+        replies_id_map = {}
+        # List of comments that have "reply_to_comment" field
+        replies = []
+        # List of replied users
         users_replied = []
 
-        if (post_id):
-            vk_comments = self._get_comments_for_post(user_id, post_id)
-        else:
-            vk_comments = self._get_comments_for_photo(user_id, photo_id)
+        vk_comments = self._get_comments_for_photo(user_id, photo_id)
 
         for vk_comment in vk_comments:
-            #print (vk_comment)
-            db_comment = db.session.query(db.Comment).get(vk_comment['id'])
-            if (not db_comment):
-                # Create comment itself
-                db_comment = db.Comment(vk_comment['id'], vk_comment)
+            db_comment = db.session.query(db.Comment).filter_by(
+                vk_id = vk_comment['id'],
+                photo_id = real_id
+            ).first()
 
-                # Create empty record for author if it doesn't exists
+            if (not db_comment):
+                # TODO: HACK
+                vk_comment['pid'] = real_id
+
+                # Create comment
+                db_comment = db.Comment(vk_comment)
+
+                # Create empty record for author if it doesn't exist
                 db_user = self._get_user(db_comment.from_id)
 
                 db.session.add(db_comment)
 
+                # Commit comment, so it'll receive proper ID
+                db.session.commit()
+
                 # Append author to the list of users commented here
                 users_replied.append(db_comment.from_id)
+
+                # Schedule comment to be fixed, if neccessary
+                if (db_comment.reply_to_comment):
+                    replies.append(db_comment)
+
+            replies_id_map[db_comment.vk_id] = db_comment.id
+
+        # Fix all "reply to" fields
+        for reply in replies:
+            reply.reply_to_comment = replies_id_map[reply.reply_to_comment]
+            db.session.add(reply)
+
+        db.session.commit()
+
+        return users_replied
+
+    def collect_comments_for_post(self, user_id, post_id, real_id):
+        # Map for transforming reply_to_comment into real comment IDs
+        replies_id_map = {}
+        # List of comments that have "reply_to_comment" field
+        replies = []
+        # List of replied users
+        users_replied = []
+
+        vk_comments = self._get_comments_for_post(user_id, post_id)
+
+        for vk_comment in vk_comments:
+            db_comment = db.session.query(db.Comment).filter_by(
+                vk_id = vk_comment['id'],
+                post_id = real_id
+            ).first()
+
+            if (not db_comment):
+                # TODO: HACK
+                vk_comment['post_id'] = real_id
+
+                # Create comment
+                db_comment = db.Comment(vk_comment)
+
+                # Create empty record for author if it doesn't exist
+                db_user = self._get_user(db_comment.from_id)
+
+                db.session.add(db_comment)
+
+                # Commit comment, so it'll receive proper ID
+                db.session.commit()
+
+                # Append author to the list of users commented here
+                users_replied.append(db_comment.from_id)
+
+                # Schedule comment to be fixed, if neccessary
+                if (db_comment.reply_to_comment):
+                    replies.append(db_comment)
+
+            replies_id_map[db_comment.vk_id] = db_comment.id
+
+        # Fix all "reply to" fields
+        for reply in replies:
+            reply.reply_to_comment = replies_id_map[reply.reply_to_comment]
+            db.session.add(reply)
 
         db.session.commit()
 
         return users_replied
 
     # Returns IDs of the users that commented on the post or photo of current user
-    def collect_records_with_comments(self, user_id, db_Class, getter):
+    def collect_records_with_comments(self, user_id, db_Class, getter, comment_collector):
         users_replied = []
 
         vk_records = getter(user_id)
 
         for vk_record in vk_records:
-            db_record = db.session.query(db_Class).get( vk_record['id'] )
+            db_record = db.session.query(db_Class).filter_by( 
+                vk_id = vk_record['id'], 
+                owner_id = vk_record['owner_id'] 
+            ).first()
+
             if (not db_record):
                 # Record doesn't exists, create it
-                db_record = db_Class(vk_record['id'], vk_record)
+                db_record = db_Class(vk_record)
 
                 # TODO: HACK: do better!
                 if (db_Class == db.Post):
@@ -197,12 +268,9 @@ class Collector(object):
                     users_replied.append(db_record.from_id)
 
                 db.session.add(db_record)
+                db.session.commit()
 
-            # TODO: HACK: do better!
-            if (db_Class == db.Post):
-                users_replied.extend(self.collect_comments_for_post_or_photo(user_id, post_id = vk_record['id']))
-            else:
-                users_replied.extend(self.collect_comments_for_post_or_photo(user_id, photo_id = vk_record['id']))
+            users_replied.extend(comment_collector(user_id, vk_record['id'], db_record.id))
 
         db.session.commit()
 
@@ -218,8 +286,8 @@ class Collector(object):
             print ("Skipping user, its data is new")
             return []
 
-        users_from_posts = self.collect_records_with_comments(user_id, db.Post, self._get_posts)
-        users_from_photos = self.collect_records_with_comments(user_id, db.Photo, self._get_photos)
+        users_from_posts = self.collect_records_with_comments(user_id, db.Post, self._get_posts, self.collect_comments_for_post)
+        users_from_photos = self.collect_records_with_comments(user_id, db.Photo, self._get_photos, self.collect_comments_for_photo)
 
         db_user.updated = datetime.utcnow()
         db.session.add(db_user)
