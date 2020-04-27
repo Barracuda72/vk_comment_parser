@@ -41,7 +41,7 @@ class User(Base):
 
         self.first_name = user.get('first_name')
         self.last_name = user.get('last_name')
-        self.deactivated = user.get('deactivated')
+        self.deactivated = bool(user.get('deactivated'))
         self.is_closed = user.get('is_closed')
         self.nickname = user.get('nickname')
         self.about = user.get('about')
