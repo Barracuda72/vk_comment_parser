@@ -72,13 +72,19 @@ class Collector(object):
     # Create new user or retrieve the existing one
     def _get_user(self, user_id):
         # Search user in the database
-        db_user = db.session.query(db.User).get(user_id)
-        
-        if (not db_user):
-            # Create new user
-            vk_user = self._get_user_data(user_id)
-            #print (vk_user)
-            db_user = self._create_user(user_id, vk_user)
+        db_user = None
+        while not db_user:
+            db_user = db.session.query(db.User).get(user_id)
+    
+            if (not db_user):
+                # Create new user
+                vk_user = self._get_user_data(user_id)
+                with db.session.begin_nested():
+                    try:
+                        db_user = self._create_user(user_id, vk_user)
+                    except IntegrityError as e:
+                        print ("Integrity error, probably user already exists: {}".format(e))
+                
 
         #print (db_user)
 
@@ -98,7 +104,7 @@ class Collector(object):
                             db_city = db.City(vk_city['id'], vk_city['title'])
                             db.session.add(db_city)
                     except IntegrityError as e:
-                        print ("Integrity error {}, probably someone already created this object")
+                        print ("Integrity error, probably someone already created this object: {}".format(e))
 
         # Check country and add it if neccessary
         vk_country = vk_user.get('country')
@@ -112,7 +118,7 @@ class Collector(object):
                             db_country = db.Country(vk_country['id'], vk_country['title'])
                             db.session.add(db_country)
                     except IntegrityError as e:
-                        print ("Integrity error {}, probably someone already created this object")
+                        print ("Integrity error, probably someone already created this object: {}".format(e))
 
         # Check education and add it if neccessary
         vk_education = vk_user.get('education')
