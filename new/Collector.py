@@ -172,36 +172,6 @@ class Collector(object):
             print ("Exception: {}".format(e))
             return []
 
-    def __collect_comments_for_photo(self, user_id, photo_id, real_id):
-        users_replied = []
-
-        vk_comments = self._get_comments_for_photo(user_id, photo_id)
-
-        for vk_comment in vk_comments:
-            db_comment = db.session.query(db.PhotoComment).filter_by(
-                id = vk_comment['id'],
-                photo_id = real_id
-            ).first()
-
-            if (not db_comment):
-                # TODO: HACK
-                vk_comment['pid'] = real_id
-
-                # Create comment
-                db_comment = db.PhotoComment(vk_comment)
-
-                # Create empty record for author if it doesn't exist
-                db_user = self._get_user(db_comment.from_id)
-
-                db.session.add(db_comment)
-
-                # Append author to the list of users commented here
-                users_replied.append(db_comment.from_id)
-
-        db.session.commit()
-
-        return users_replied
-
     def collect_comments_for_post_or_photo(self, user_id, object_id, real_id, key, getter, db_Class, **kwds):
         # Map for transforming reply_to_comment into real comment IDs
         replies_id_map = {}
@@ -216,7 +186,7 @@ class Collector(object):
 
         for vk_comment in vk_comments:
             kwds['id'] = vk_comment['id']
-            db_comment = db.session.query(db_Class).filter_by(kwds).first()
+            db_comment = db.session.query(db_Class).filter_by(**kwds).first()
 
             if (not db_comment):
                 # TODO: HACK
@@ -272,65 +242,6 @@ class Collector(object):
                 self._get_comments_for_photo, db.PhotoComment, 
                 photo_id = real_id
             )
-
-    def __collect_comments_for_post(self, user_id, post_id, real_id):
-        # Map for transforming reply_to_comment into real comment IDs
-        replies_id_map = {}
-        # List of comments that have "reply_to_comment" field
-        replies = []
-        # List of replied users
-        users_replied = []
-        # New comments
-        new_comments = []
-
-        vk_comments = self._get_comments_for_post(user_id, post_id)
-
-        for vk_comment in vk_comments:
-            db_comment = db.session.query(db.WallComment).filter_by(
-                id = vk_comment['id'],
-                post_id = real_id
-            ).first()
-
-            if (not db_comment):
-                # TODO: HACK
-                vk_comment['post_id'] = real_id
-
-                # Create comment
-                db_comment = db.WallComment(vk_comment)
-
-                # Create empty record for author if it doesn't exist
-                db_user = self._get_user(db_comment.from_id)
-
-                # Append author to the list of users commented here
-                users_replied.append(db_comment.from_id)
-                
-                if (db_comment.reply_to_comment_id):
-                    replies.append(db_comment)
-                else:
-                    db.session.add(db_comment)
-                    db.session.commit()
-                    replies_id_map[db_comment.id] = db_comment.unique_id
-            else:
-                replies_id_map[db_comment.id] = db_comment.unique_id
-
-        # Fix all "reply to" fields
-        while len(replies) > 0:
-            unprocessed_replies = []
-            for db_comment in replies:
-                unique_id = replies_id_map.get(db_comment.reply_to_comment_id)
-                if (unique_id):
-                    db_comment.reply_to_comment_id = unique_id
-                    db.session.add(db_comment)
-                    db.session.commit()
-                    replies_id_map[db_comment.id] = db_comment.unique_id
-                else:
-                    unprocessed_replies.append(db_comment)
-
-            replies = unprocessed_replies
-
-        db.session.commit()
-
-        return users_replied
 
     def get_referenced_post(self, owner_id, post_id):
         db_user = self._get_user(owner_id)
