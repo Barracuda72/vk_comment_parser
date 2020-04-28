@@ -246,22 +246,28 @@ class Collector(object):
     def get_referenced_post(self, owner_id, post_id):
         db_user = self._get_user(owner_id)
 
-        db_post = db.session.query(db.Post).filter_by(
-            id = post_id,
-            owner_id = owner_id
-        ).first()
-
-        if (not db_post):
-            vk_post = self._get_specific_user_wall_posts(owner_id, [post_id])
-            db_post = db.Post(vk_post)
-            db_from = self._get_user(db_record.from_id)
-
-            if (vk_post.get('reply_post_id')):
-                parent_post = self.get_referenced_post(vk_post['reply_owner_id'], vk_post['reply_post_id'])
-                db_post.reply_post_id = parent_post.unique_id
-
-            db.session.add(db_post)
-            db.session.commit()
+        db_post = None
+        while not db_post:
+            db_post = db.session.query(db.Post).filter_by(
+                id = post_id,
+                owner_id = owner_id
+            ).first()
+    
+            if (not db_post):
+                vk_post = self._get_specific_user_wall_posts(owner_id, [post_id])
+                db_post = db.Post(vk_post)
+                db_from = self._get_user(db_record.from_id)
+    
+                if (vk_post.get('reply_post_id')):
+                    parent_post = self.get_referenced_post(vk_post['reply_owner_id'], vk_post['reply_post_id'])
+                    db_post.reply_post_id = parent_post.unique_id
+    
+                try:
+                    with db.session.begin_nested():
+                        db.session.add(db_post)
+                except IntegrityError as e:
+                    self._print_integrity_error(db_Class, e)
+                    db_post = None
 
         return db_post
     
@@ -272,32 +278,38 @@ class Collector(object):
         vk_records = getter(user_id)
 
         for vk_record in vk_records:
-            db_record = db.session.query(db_Class).filter_by( 
-                id = vk_record['id'], 
-                owner_id = vk_record['owner_id'] 
-            ).first()
+            db_record = None
+            while not db_record:
+                db_record = db.session.query(db_Class).filter_by( 
+                    id = vk_record['id'], 
+                    owner_id = vk_record['owner_id'] 
+                ).first()
 
-            if (not db_record):
-                # Record doesn't exists, create it
-                db_record = db_Class(vk_record)
+                if (not db_record):
+                    # Record doesn't exists, create it
+                    db_record = db_Class(vk_record)
 
-                # TODO: HACK: do better!
-                if (db_Class == db.Post):
-                    # Photos don't have from_id
-                    # Also they don't have recursive dependencies
-                    # Create empty record for author if it doesn't exists
-                    db_user = self._get_user(db_record.from_id)
+                    # TODO: HACK: do better!
+                    if (db_Class == db.Post):
+                        # Photos don't have from_id
+                        # Also they don't have recursive dependencies
+                        # Create empty record for author if it doesn't exists
+                        db_user = self._get_user(db_record.from_id)
 
-                    # Append author to the list of users posted here
-                    users_replied.append(db_record.from_id)
+                        # Append author to the list of users posted here
+                        users_replied.append(db_record.from_id)
 
-                    if (vk_record.get("reply_post_id")):
-                        parent_post = self.get_referenced_post(vk_post['reply_owner_id'], vk_post['reply_post_id'])
-                        db_record.reply_post_id = parent_post.unique_id
-                        users_replied.append(int(vk_post['reply_owner_id']))
+                        if (vk_record.get("reply_post_id")):
+                            parent_post = self.get_referenced_post(vk_post['reply_owner_id'], vk_post['reply_post_id'])
+                            db_record.reply_post_id = parent_post.unique_id
+                            users_replied.append(int(vk_post['reply_owner_id']))
 
-                db.session.add(db_record)
-                db.session.commit()
+                    try:
+                        with db.session.begin_nested():
+                            db.session.add(db_record)
+                    except IntegrityError as e:
+                        self._print_integrity_error(db_Class, e)
+                        db_record = None
 
             users_replied.extend(comment_collector(user_id, vk_record['id'], db_record.unique_id))
 
