@@ -133,15 +133,44 @@ class Collector(object):
                     # Check University and Faculty, create them if neccessary
                     db_university = self._get_binary_relation(db.University, vk_education['university'], vk_education['university_name'])
                     db_faculty = self._get_binary_relation(db.Faculty, vk_education['faculty'], vk_education['faculty_name'])
+                    db_education = db.Education(None, vk_education)
     
                     try:
                         with db.session.begin_nested():
-                            db_education = db.Education(None, vk_education)
                             db.session.add(db_education)
                     except IntegrityError as e:
                         self._print_integrity_error(db.Education, e)
+                        db_education = None
 
-        # TODO: connections, counters!
+        vk_connections = vk_user.get('connections')
+        if (vk_connections):
+            db_connections = None
+            while not db_connections:
+                db_connections = db.session.query(db.Connections).get( user_id )
+                if (not db_connections):
+                    db_connections = db.Connections( user_id, vk_connections )
+
+                    try:
+                        with db.session.begin_nested():
+                            db.session.add(db_connections)
+                    except IntegrityError as e:
+                        self._print_integrity_error(db.Connections, e)
+                        db_connections = None
+
+        vk_counters = vk_user.get('counters')
+        if (vk_counters):
+            db_counters = None
+            while not db_counters:
+                db_counters = db.session.query(db.Counters).get( user_id )
+                if (not db_counters):
+                    db_counters = db.Counters( user_id, vk_counters )
+
+                    try:
+                        with db.session.begin_nested():
+                            db.session.add(db_counters)
+                    except IntegrityError as e:
+                        self._print_integrity_error(db.Counters, e)
+                        db_counters = None
 
         db_user = None
         try:
