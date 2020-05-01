@@ -12,8 +12,6 @@ import database as db
 
 app = Flask(__name__)
 
-p = Populator()
-
 username_pattern = re.compile("^\+\d{10,15}$")
 password_pattern = re.compile("^\w{6,20}$")
 
@@ -49,6 +47,8 @@ def add_login():
                 password = pass_match.group(0)
 
             data = "{} {}".format(username, password)
+            p = Populator()
+
             p.publish_login(data)
             return "Data added: {}".format(data)
         except Exception as e:
@@ -66,6 +66,8 @@ def add_work():
             try:
                 user_id = int(user_id)
                 message = "{} {}".format(user_id, 0)
+                p = Populator()
+
                 p.publish_work(message)
             except Exception as e:
                 errors.append("Error processing UID '{}': {}".format(user_id, e))
