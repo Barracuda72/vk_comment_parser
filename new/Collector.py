@@ -329,9 +329,9 @@ class Collector(object):
                         users_replied.append(db_record.from_id)
 
                         if (vk_record.get("reply_post_id")):
-                            parent_post = self.get_referenced_post(vk_post['reply_owner_id'], vk_post['reply_post_id'])
+                            parent_post = self.get_referenced_post(vk_record['reply_owner_id'], vk_record['reply_post_id'])
                             db_record.reply_post_id = parent_post.unique_id
-                            users_replied.append(int(vk_post['reply_owner_id']))
+                            users_replied.append(int(vk_record['reply_owner_id']))
 
                     try:
                         with db.session.begin_nested():
