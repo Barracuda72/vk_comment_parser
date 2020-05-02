@@ -285,7 +285,7 @@ class Collector(object):
             if (not db_post):
                 vk_post = self._get_specific_user_wall_posts(owner_id, [post_id])[0]
                 db_post = db.Post(vk_post)
-                db_from = self._get_user(db_record.from_id)
+                db_from = self._get_user(db_post.from_id)
     
                 if (vk_post.get('reply_post_id')):
                     parent_post = self.get_referenced_post(vk_post['reply_owner_id'], vk_post['reply_post_id'])
