@@ -218,6 +218,10 @@ class Collector(object):
         vk_comments = getter(user_id, object_id)
 
         for vk_comment in vk_comments:
+            if (vk_comment.get("deleted") == True):
+                print ("Skipping deleted comment")
+                continue
+
             kwds['id'] = vk_comment['id']
             db_comment = db.session.query(db_Class).filter_by(**kwds).first()
 
