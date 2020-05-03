@@ -51,10 +51,10 @@ class Collector(object):
     def _get_specific_user_wall_posts(self, user_id, posts):
         posts = [str(user_id) + "_" + str(post_id) for post_id in posts]
         posts = ",".join(posts)
-        print ("Requesting posts {}".format(posts))
+        #print ("Requesting posts {}".format(posts))
         ret = self.vk.wall.getById(posts = posts) #['items']
-        import json
-        print ("Got {}".format(json.dumps(ret)))
+        #import json
+        #print ("Got {}".format(json.dumps(ret)))
         return ret
 
     # Return comments for post
@@ -287,13 +287,26 @@ class Collector(object):
             ).first()
     
             if (not db_post):
-                vk_post = self._get_specific_user_wall_posts(owner_id, [post_id])[0]
+                post_list = self._get_specific_user_wall_posts(owner_id, [post_id])
+
+                try:
+                    vk_post = post_list[0]
+                    print ('Successfully retrieved parent post {}_{}'.format(owner_id, post_id))
+                except IndexError as e:
+                    print ('Failed to retrieve parent post {}_{}'.format(owner_id, post_id))
+                    return None
+
                 db_post = db.Post(vk_post)
                 db_from = self._get_user(db_post.from_id)
     
                 if (vk_post.get('reply_post_id')):
                     parent_post = self.get_referenced_post(vk_post['reply_owner_id'], vk_post['reply_post_id'])
-                    db_post.reply_post_id = parent_post.unique_id
+
+                    if (parent_post):
+                        db_post.reply_post_id = parent_post.unique_id
+                    else:
+                        db_post.reply_post_id = None
+                        db_post.reply_owner_id = None
     
                 try:
                     with db.session.begin_nested():
@@ -334,8 +347,13 @@ class Collector(object):
 
                         if (vk_record.get("reply_post_id")):
                             parent_post = self.get_referenced_post(vk_record['reply_owner_id'], vk_record['reply_post_id'])
-                            db_record.reply_post_id = parent_post.unique_id
-                            users_replied.append(int(vk_record['reply_owner_id']))
+
+                            if (parent_post):
+                                db_record.reply_post_id = parent_post.unique_id
+                                users_replied.append(int(vk_record['reply_owner_id']))
+                            else:
+                                db_record.reply_post_id = None
+                                db_record.reply_owner_id = None
 
                     try:
                         with db.session.begin_nested():
