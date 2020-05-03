@@ -51,7 +51,11 @@ class Collector(object):
     def _get_specific_user_wall_posts(self, user_id, posts):
         posts = [str(user_id) + "_" + str(post_id) for post_id in posts]
         posts = ",".join(posts)
-        return self.vk.wall.getById(posts = posts) #['items']
+        print ("Requesting posts {}".format(posts))
+        ret = self.vk.wall.getById(posts = posts) #['items']
+        import json
+        print ("Got {}".format(json.dumps(ret)))
+        return ret
 
     # Return comments for post
     def _get_comments_for_post(self, user_id, post_id):
