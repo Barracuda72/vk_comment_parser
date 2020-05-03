@@ -231,7 +231,7 @@ class Collector(object):
                 # Create empty record for author if it doesn't exist
                 if (not db_comment.from_id):
                     import json
-                    json.dumps(vk_comment)
+                    print (json.dumps(vk_comment))
                     raise Exception("Empty FROM_ID!")
                 db_user = self._get_user(db_comment.from_id)
 
