@@ -251,8 +251,11 @@ class Collector(object):
             else:
                 replies_id_map[db_comment.id] = db_comment.unique_id
 
+        unprocessed_len = 0
+
         # Fix all "reply to" fields
         while len(replies) > 0:
+            unprocessed_len = len(replies)
             unprocessed_replies = []
             for db_comment in replies:
                 unique_id = replies_id_map.get(db_comment.reply_to_comment_id)
@@ -265,6 +268,16 @@ class Collector(object):
                     unprocessed_replies.append(db_comment)
 
             replies = unprocessed_replies
+
+            if (len(replies) == unprocessed_len):
+                # We failed to resolve remaining comments; maybe they were replies to a deleted one
+                # Just break out
+                break
+
+        # Some comments left unprocessed; remove "reply_to" fields from them
+        for db_comment in replies:
+            db_comment.reply_to_comment_id = None
+            db.session.add(db_comment)
 
         db.session.commit()
 
