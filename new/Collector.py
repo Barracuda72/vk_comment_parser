@@ -82,7 +82,7 @@ class Collector(object):
     # Create new user or retrieve the existing one
     def _get_user(self, user_id):
         # TODO: handle this in more proper way!
-        if (user_id >= 0):
+        if (user_id <= 0):
             return None
 
         # Search user in the database
