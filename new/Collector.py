@@ -42,7 +42,12 @@ class Collector(object):
     # Return user object
     def _get_user_data(self, user_id):
         print ("Requesting VK user {} data".format(user_id))
-        return self.vk.users.get(user_ids=user_id, name_case="Nom", fields=self.user_fields)[0]
+        data = self.vk.users.get(user_ids=user_id, name_case="Nom", fields=self.user_fields)
+        try:
+            return data[0]
+        except IndexError as e:
+            print ("Empty user data returned for user {}".format(user_id))
+            return None
 
     # Return user posts
     def _get_user_wall_posts(self, user_id):
@@ -76,6 +81,10 @@ class Collector(object):
 
     # Create new user or retrieve the existing one
     def _get_user(self, user_id):
+        # TODO: handle this in more proper way!
+        if (user_id >= 0):
+            return None
+
         # Search user in the database
         db_user = None
         while not db_user:
@@ -84,12 +93,16 @@ class Collector(object):
             if (not db_user):
                 # Create new user
                 vk_user = self._get_user_data(user_id)
+
+                if (not vk_user):
+                    print ("Failed to retrieve user data: {}".format(user_id))
+                    return None
+
                 with db.session.begin_nested():
                     try:
                         db_user = self._create_user(user_id, vk_user)
                     except IntegrityError as e:
                         print ("Integrity error, probably user already exists: {}".format(e))
-                
 
         #print (db_user)
 
@@ -239,6 +252,9 @@ class Collector(object):
                     print (json.dumps(vk_comment))
                     raise Exception("Empty FROM_ID!")
                 db_user = self._get_user(db_comment.from_id)
+                if (not user):
+                    # TODO: Skip for now
+                    continue
 
                 # Append author to the list of users commented here
                 users_replied.append(db_comment.from_id)
@@ -300,6 +316,9 @@ class Collector(object):
 
     def get_referenced_post(self, owner_id, post_id):
         db_user = self._get_user(owner_id)
+        if (not db_user):
+            # TODO: handle in more proper way
+            return None
 
         db_post = None
         while not db_post:
@@ -321,6 +340,10 @@ class Collector(object):
                 db_post = db.Post(vk_post)
                 db_from = self._get_user(db_post.from_id)
     
+                if (not db_from):
+                # TODO: handle in more proper way
+                    return None
+
                 if (vk_post.get('reply_post_id')):
                     parent_post = self.get_referenced_post(vk_post['reply_owner_id'], vk_post['reply_post_id'])
 
@@ -363,6 +386,9 @@ class Collector(object):
                         # Also they don't have recursive dependencies
                         # Create empty record for author if it doesn't exists
                         db_user = self._get_user(db_record.from_id)
+                        if (not db_user):
+                            # TODO: handle in more proper way
+                            break # from "while" loop
 
                         # Append author to the list of users posted here
                         users_replied.append(db_record.from_id)
@@ -384,7 +410,8 @@ class Collector(object):
                         self._print_integrity_error(db_Class, e)
                         db_record = None
 
-            users_replied.extend(comment_collector(user_id, vk_record['id'], db_record.unique_id))
+            if (db_record):
+                users_replied.extend(comment_collector(user_id, vk_record['id'], db_record.unique_id))
 
         db.session.commit()
 
@@ -394,6 +421,9 @@ class Collector(object):
         print ("Collecting user {}".format(user_id))
 
         db_user = self._get_user(user_id)
+        if (not db_user):
+            print ("That's not a user: {}!".format(user_id))
+            return []
 
         # Check that user update time was long ago and user was not just created
         if (db_user.updated + config.collector.user_time_delta > datetime.utcnow()):
