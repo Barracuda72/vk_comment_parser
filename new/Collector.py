@@ -41,6 +41,7 @@ class Collector(object):
 
     # Return user object
     def _get_user_data(self, user_id):
+        print ("Requesting VK user {} data".format(user_id))
         return self.vk.users.get(user_ids=user_id, name_case="Nom", fields=self.user_fields)[0]
 
     # Return user posts
