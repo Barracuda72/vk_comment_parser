@@ -252,7 +252,7 @@ class Collector(object):
                     print (json.dumps(vk_comment))
                     raise Exception("Empty FROM_ID!")
                 db_user = self._get_user(db_comment.from_id)
-                if (not user):
+                if (not db_user):
                     # TODO: Skip for now
                     continue
 
