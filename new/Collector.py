@@ -32,7 +32,10 @@ class Collector(object):
             vk_session.auth()
             print("auth_success")
         except vk_api.AuthError as error:
-            print(error)
+            print (error)
+            raise error
+        except vk_api.exceptions.Captcha as error:
+            print ("ERROR: Captcha required for user {}".format(login))
             raise error
 
         self.tools = vk_api.VkTools(vk_session)
@@ -209,7 +212,10 @@ class Collector(object):
         try:
             return self.tools.get_all('wall.get', config.collector.max_post_count, {'owner_id': user_id})['items']
         except vk_api.exceptions.VkToolsException as e:
-            print ("Exception: {}".format(e))
+            print ("VkTools Exception: {}".format(e))
+            return []
+        except vk_api.exceptions.ApiHttpError as e:
+            print ("API Exception: {}".format(e))
             return []
 
     def _get_photos(self, user_id):
