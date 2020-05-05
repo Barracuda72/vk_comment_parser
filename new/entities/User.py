@@ -53,8 +53,11 @@ class User(Base):
             if (bdate.count(".") == 1):
                 # Append fake year
                 bdate = bdate + ".6000"
-            print ("Formatting date {}".format(bdate))
-            self.bdate = datetime.strptime(bdate, "%d.%m.%Y")
+            try:
+                self.bdate = datetime.strptime(bdate, "%d.%m.%Y")
+            except ValueError as e:
+                print ("Error parsing date {}, leaving empty".format(bdate))
+                self.bdate = None
         # TODO: connections, counter, updated!
 
     def __repr__(self):
