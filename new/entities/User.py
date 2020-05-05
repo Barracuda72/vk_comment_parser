@@ -53,6 +53,7 @@ class User(Base):
             if (bdate.count(".") == 1):
                 # Append fake year
                 bdate = bdate + ".6000"
+            print ("Formatting date {}".format(bdate))
             self.bdate = datetime.strptime(bdate, "%d.%m.%Y")
         # TODO: connections, counter, updated!
 
